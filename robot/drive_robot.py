@@ -68,7 +68,7 @@ def read_encoders(ADDRESS, ENCODERONE):
     enc2 = (readBuffer[4]<<24) + (readBuffer[5]<<16) + (readBuffer[6]<<8) + readBuffer[7]
     return enc1, enc2
 
-def read_sensors(adc1, adc2):
+def read_sensors():
     val1 = adc1.read_u16() # IR sensor 1
     val2 = adc2.read_u16() # IR sensor 2
     return val1, val2
@@ -86,7 +86,7 @@ def get_linear_distance():
     val1, val2 = read_sensors(adc1, adc2)
     
     if val1 < IR_THRESHOLD and val2 < IR_THRESHOLD:
-        # robot is lost. Not sure the solution in this case, maybe turn slightly in each direction until line is found?
+        # robot is not on the line!
         online = 0
         return 1
     else:
@@ -119,14 +119,7 @@ def get_linear_distance():
             speed = 0
             set_speed(speed, SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
 
-
-
-
-
-
-
-
-    
+    return enc1, enc2
 
 def turn_lines(n_lines):
     # reset encoders

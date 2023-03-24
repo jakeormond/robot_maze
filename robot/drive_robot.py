@@ -28,7 +28,7 @@ RESETENCODERS = 0x20
 MODE_REG = 0x0F
 
 # set constants
-IR_THRESHOLD = 1000 # probably needs adjusting
+IR_THRESHOLD = 2000 # probably needs adjusting
 TOP_SPEED = 127
 MIN_SPEED = 20
 DIST_TURN = 1000 # this will need adjusting
@@ -60,17 +60,19 @@ def reset_encoders():
     writeBuffer[1] = RESETENCODERS
     i2c.writeto(ADDRESS,writeBuffer)
     enc1, enc2 = read_encoders(ADDRESS, ENCODERONE)
-    print(enc1,enc2)
+    # print(enc1,enc2)
 
 def read_encoders(ADDRESS, ENCODERONE):
     readBuffer = i2c.readfrom_mem(ADDRESS, ENCODERONE, 8)
     enc1 = (readBuffer[0]<<24) + (readBuffer[1]<<16) + (readBuffer[2]<<8) + readBuffer[3]
     enc2 = (readBuffer[4]<<24) + (readBuffer[5]<<16) + (readBuffer[6]<<8) + readBuffer[7]
+    print(enc1, enc2)
     return enc1, enc2
 
 def read_sensors():
     val1 = adc1.read_u16() # IR sensor 1
     val2 = adc2.read_u16() # IR sensor 2
+    # print(val1, val2)
     return val1, val2
 
 # get the distance in encoder units from one platform position to adjacent platforms
@@ -83,7 +85,7 @@ def get_linear_distance():
     reset_encoders()
 
     # get initial IR values. Note that we are not yet set up for situation where somehow the robot is not on a line.
-    val1, val2 = read_sensors(adc1, adc2)
+    val1, val2 = read_sensors()
     
     if val1 < IR_THRESHOLD and val2 < IR_THRESHOLD:
         # robot is not on the line!
@@ -96,18 +98,18 @@ def get_linear_distance():
     speed = TOP_SPEED
 
     while True:
-        val1, val2 = read_sensors(adc1, adc2)
+        val1, val2 = read_sensors()
         
         if online == 1:
             if val1 >= IR_THRESHOLD and val2 >= IR_THRESHOLD:
                 set_speed(speed, SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
             elif val1 >= IR_THRESHOLD and val2 < IR_THRESHOLD:
-                set_speed(speed, SPEED1, speed*0.95, SPEED2, writeBuffer, ADDRESS)
+                set_speed(speed, SPEED1, round(speed*0.95), SPEED2, writeBuffer, ADDRESS)
             elif val1 < IR_THRESHOLD and val2 >= IR_THRESHOLD:
-                set_speed(speed*0.95, SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
+                set_speed(round(speed*0.95), SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
             else:
                 if speed > MIN_SPEED:
-                    speed = 0.95*speed
+                    speed = round(0.95*speed)
                 online = 0
                 enc1, enc2 = read_encoders(ADDRESS, ENCODERONE)
                 distances[0] = (enc1 + enc2)/2
@@ -118,6 +120,7 @@ def get_linear_distance():
             distances[1] = (enc1 + enc2)/2 - distances[0]
             speed = 0
             set_speed(speed, SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
+            break
 
     return enc1, enc2
 
@@ -165,7 +168,7 @@ def turn_lines(n_lines):
         distance_left = dist2turn - dist_turned
         if distance_left < SLOWING_DIST:
             if speed > MIN_SPEED:
-                speed = speed * .95
+                speed = round(speed * .95)
 
         # read from IR sensors and update lines_turned if on a new line
         val1, val2 = read_sensors(adc1, adc2)
@@ -248,12 +251,3 @@ def linear_drive(n_lines):
 
     
 
-
-
-
-
-
-
-
-def drive_robot(input):
-    jake = 2

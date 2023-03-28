@@ -42,6 +42,10 @@ def parse_data(data, conn):
     
     if len(data) > 1: # drive the robot
         jake = 1
+        
+    elif data[0] == 96: # turn in place
+        encoder_distance1, encoder_distance2 = dr.turn_in_place(1)
+        conn.sendall(str([encoder_distance1, encoder_distance2]))
                 
     elif data[0] == 97: # simply get ir sensor values 
         sensor_value1, sensor_value2 = dr.read_sensors()
@@ -53,7 +57,7 @@ def parse_data(data, conn):
 
     elif data[0] == 99: # run linear test program
         encoder_distance1, encoder_distance2 = dr.get_linear_distance()
-        conn.sendall(str([sensor_value1, sensor_value2]))
+        conn.sendall(str([encoder_distance1, encoder_distance2]))
 
     else:    # bad command
         conn.sendall('bad command')

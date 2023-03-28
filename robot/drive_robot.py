@@ -66,7 +66,6 @@ def read_encoders(ADDRESS, ENCODERONE):
     readBuffer = i2c.readfrom_mem(ADDRESS, ENCODERONE, 8)
     enc1 = (readBuffer[0]<<24) + (readBuffer[1]<<16) + (readBuffer[2]<<8) + readBuffer[3]
     enc2 = (readBuffer[4]<<24) + (readBuffer[5]<<16) + (readBuffer[6]<<8) + readBuffer[7]
-    print(enc1, enc2)
     return enc1, enc2
 
 def read_sensors():
@@ -75,12 +74,25 @@ def read_sensors():
     # print(val1, val2)
     return val1, val2
 
+def drive_basic(speed1, speed2):
+    set_speed(speed1, SPEED1, speed2, SPEED2, writeBuffer, ADDRESS)
+    return 0
+
+
+def drive_straight(val1, val2, speed): # drive straight along line, adjusting speed as necessary to stay on line          
+    if val1 >= IR_THRESHOLD and val2 < IR_THRESHOLD:
+        set_speed(speed, SPEED1, round(speed*0.95), SPEED2, writeBuffer, ADDRESS)
+    
+    elif val1 < IR_THRESHOLD and val2 >= IR_THRESHOLD:
+        set_speed(round(speed*0.95), SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
+        
+    else:
+        set_speed(speed, SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
+    return 0
+
 # get the distance in encoder units from one platform position to adjacent platforms
 # for code development
 def get_linear_distance():
-    # initialize list of distances
-    distances = [None]*2
-
     # reset encoders
     reset_encoders()
 
@@ -90,40 +102,57 @@ def get_linear_distance():
     if val1 < IR_THRESHOLD and val2 < IR_THRESHOLD:
         # robot is not on the line!
         online = 0
-        return 1
+        return 0, 0
     else:
         online = 1
     
     # set initial speed
     speed = TOP_SPEED
 
+    start_time = time.time()
     while True:
+        drive_straight(val1, val2, speed)
+        elapsed_time = time.time() - startime
         val1, val2 = read_sensors()
         
-        if online == 1:
-            if val1 >= IR_THRESHOLD and val2 >= IR_THRESHOLD:
-                set_speed(speed, SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
-            elif val1 >= IR_THRESHOLD and val2 < IR_THRESHOLD:
-                set_speed(speed, SPEED1, round(speed*0.95), SPEED2, writeBuffer, ADDRESS)
-            elif val1 < IR_THRESHOLD and val2 >= IR_THRESHOLD:
-                set_speed(round(speed*0.95), SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
-            else:
-                if speed > MIN_SPEED:
-                    speed = round(0.95*speed)
-                online = 0
-                enc1, enc2 = read_encoders(ADDRESS, ENCODERONE)
-                distances[0] = (enc1 + enc2)/2
-                set_speed(speed, SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
-
-        elif val1 >= IR_THRESHOLD or val2 >= IR_THRESHOLD:
-            enc1, enc2 = read_encoders(ADDRESS, ENCODERONE)
-            distances[1] = (enc1 + enc2)/2 - distances[0]
+        if (online == 0 and (val1 >= IR_THRESHOLD or val2 >= IR_THRESHOLD)) or elapsed_time > 9: # STOP            
             speed = 0
-            set_speed(speed, SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
+            drive_basic(speed, speed)
             break
-
+        
+        if online == 1:
+            if val1 < IR_THRESHOLD and val2 < IR_THRESHOLD:
+                online = 0
+                
+        elif MIN_SPEED < speed:
+            speed = round(0.95*speed)            
+            
+    enc1, enc2 = read_encoders(ADDRESS, ENCODERONE)
     return enc1, enc2
 
+def turn_in_place(direction): # for testing purposes, direction == 1 for clockwise, -1 for counterclockwise
+    reset_encoders()
+    val1, val2 = read_sensors()
+    speed = round(TOP_SPEED/5)
+    
+    start_time = time.time()
+    while True:
+        elapsed_time = time.time() - start_time
+        if elapsed_time > 1:
+            enc1, enc2 = read_encoders(ADDRESS, ENCODERONE)
+            break
+                    
+        if direction == 1:
+            drive_basic(speed, -speed)
+            
+        elif direction == -1:
+            drive_basic(-speed, speed)
+            
+        else:
+            enc1, enc2 = 0, 0
+    
+    return enc1, enc2
+            
 def turn_lines(n_lines):
     # reset encoders
     reset_encoders()

@@ -1,0 +1,5 @@
+ir sensor values
+
+white line = ~19000
+
+black = ~4000

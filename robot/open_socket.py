@@ -57,7 +57,8 @@ def parse_data(data, conn):
     
     if data[0] == 96: # turn in place
         # print(f"data is {data[1]}")
-        line_distances1, line_distances2 = dr.turn_in_place(data[1], conn)
+        n_lines = data[1]
+        line_distances1, line_distances2 = dr.turn_in_place(data[1], data[2], conn)
         
         print(line_distances1)
         print(line_distances2)
@@ -84,6 +85,11 @@ def parse_data(data, conn):
         conn.sendall('message 2,')
         sleep(.1)
         conn.sendall('message 3,')
+        
+    elif data[0] == 101: # send multiple messages
+        return_zero = dr.drive_straight_for_time(5, 5, 5)
+        conn.sendall(str(return_zero) + ',')
+        conn.sendall('done,')
 
     else:    # bad command
         conn.sendall('bad command')

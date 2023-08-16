@@ -1,5 +1,6 @@
 from machine import Pin, ADC, I2C
 import time
+import utime
 import socket
 
 # initialize emitter/collector
@@ -30,8 +31,11 @@ MODE_REG = 0x0F
 
 # set constants
 IR_THRESHOLD = 7000 # probably needs adjusting
-TOP_SPEED = 127
+TOP_SPEED = 45  # 127
 MIN_SPEED = 20
+TYPICAL_TURN_DIST = 120
+MAX_TURN_DIST = 145
+
 DIST_TURN = 1000 # this will need adjusting
 DIST_LINE = 2000
 SLOWING_DIST = 500 # distance at which to start slowing
@@ -75,73 +79,122 @@ def read_sensors():
     # print(val1, val2)
     return val1, val2
 
-def drive_basic(speed1, speed2):    
+def drive_basic(speed1, speed2):  # for turning or driving with no line    
     set_speed(speed1, SPEED1, speed2, SPEED2, writeBuffer, ADDRESS)  
     return 0
 
-def drive_basic_for_time(speed1, speed2, time_limit):
+def drive_straight_for_time(speed1, speed2, time_limit): # for testing
     start_time = time.time()
-    set_speed(speed1, SPEED1, speed2, SPEED2, writeBuffer, ADDRESS)
+    last_elapsed_time = 0
+    sleep_counter = 0
     while True:
-        time2 = time.time()
-        elapsed_time = time2 - start_time
-        if elapsed_time > time_limit:
+        drive_basic(speed1, speed2)
+        
+        utime.sleep_ms(5)
+        sleep_counter += 1
+        
+        elapsed_time = time.time() - start_time
+        
+        if elapsed_time >= time_limit:
+            drive_basic(0, 0)
+            print(f'stopping at time : {elapsed_time} sec')
+            print(f'sleep_counter : {sleep_counter}')
             break
+        
+        if elapsed_time > last_elapsed_time:
+            last_elapsed_time = elapsed_time
+            print(f'elapsed time : {elapsed_time} sec')
+            print(f'sleep_counter : {sleep_counter}')
+            sleep_counter = 0
+            
     return 0
 
 
-def drive_straight(val1, val2, speed): # drive straight along line, adjusting speed as necessary to stay on line          
+def drive_straight(val1, val2, speed1, speed2): # drive straight along line, adjusting speed as necessary to stay on line          
     if val1 >= IR_THRESHOLD and val2 < IR_THRESHOLD:
-        set_speed(speed, SPEED1, round(speed*0.95), SPEED2, writeBuffer, ADDRESS)
-    
+        speed2 = round(speed1*0.95)
+        
     elif val1 < IR_THRESHOLD and val2 >= IR_THRESHOLD:
-        set_speed(round(speed*0.95), SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
+        speed1 = round(speed1*0.95)
         
     else:
-        set_speed(speed, SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
-    return 0
+        speed1 = max(speed1, speed2)
+        speed2 = speed1
+        
+    drive_basic(speed1, speed2)
+    return speed1, speed2
 
-# get the distance in encoder units from one platform position to adjacent platforms
-# for code development
-def get_linear_distance():
+def initialize_for_drive(conn):
     # reset encoders
     reset_encoders()
-
-    # get initial IR values. Note that we are not yet set up for situation where somehow the robot is not on a line.
+    
+    # read sensors to verify we are on a line
     val1, val2 = read_sensors()
     
+    # read initial state of sensors, returning if robot not on line
     if val1 < IR_THRESHOLD and val2 < IR_THRESHOLD:
         # robot is not on the line!
-        online = 0
-        return 0, 0
-    else:
-        online = 1
+        print('robot is not on the line!')
+        conn.sendall('robot is not on the line!')
+        online = False
+        return online
     
-    # set initial speed
-    speed = TOP_SPEED
+    print('robot is on the line')
+    conn.sendall('robot is on the line,')
+    online = True
+    return online
 
-    start_time = time.time()
-    while True:
-        drive_straight(val1, val2, speed)
-        elapsed_time = time.time() - start_time
+def linear_drive(n_lines, conn):
+    online = initialize_for_drive(conn)
+    if not online:
+        return [-1], [-1]
+        
+    # initialize list of line distances
+    line_distances1 = []
+    line_distances2 = []
+    
+    # initalize number of lines crossed
+    lines_crossed = 0
+    
+    # get initial encoder readings
+    enc1_a, enc2_a = read_encoders(ADDRESS, ENCODERONE)
+    
+    # set initial speeds
+    speed1 = 15
+    speed2 = speed1
+    
+    # initialize line counter
+    lines_traversed = 0
+    
+    # get start time
+    start_time = time.time()   
+
+    # main loop
+    while True:    
+        # drive and sleep
         val1, val2 = read_sensors()
         
-        if (online == 0 and (val1 >= IR_THRESHOLD or val2 >= IR_THRESHOLD)) or elapsed_time > 9: # STOP            
-            speed = 0
-            drive_basic(speed, speed)
-            break
-        
-        if online == 1:
-            if val1 < IR_THRESHOLD and val2 < IR_THRESHOLD:
-                online = 0
-                
-        elif MIN_SPEED < speed:
-            speed = round(0.95*speed)            
+        if (val1 > IR_THRESHOLD or val2 > IR_THRESHOLD) and not online:
+            lines_crossed += 1
             
-    enc1, enc2 = read_encoders(ADDRESS, ENCODERONE)
-    return enc1, enc2
+            if n_lines == lines_crossed:          
+                conn.sendall('breaking,')
+                drive_basic(0, 0)
+                break
+            
+            else:
+                online = True
+            
+        else if (val1 < IR_THRESHOLD and val2 < IR_THRESHOLD) and online:
+            online = False
+             
+        speed1, speed2 = drive_straight(val1, val2, speed1, speed2)            
+        utime.sleep_ms(5)        
+    
 
-def turn_in_place(direction, conn): # for testing purposes, direction == 1 for clockwise, -1 for counterclockwise
+
+
+def turn_in_place(n_lines, direction, conn): # direction == 1 for clockwise, -1 for counterclockwise
     # initialize list of line distances
     line_distances1 = []
     line_distances2 = []
@@ -149,13 +202,15 @@ def turn_in_place(direction, conn): # for testing purposes, direction == 1 for c
     # read sensors to verify we are on a line
     val1, val2 = read_sensors()
 
+    # read initial state of sensors, returning if robot not on line
     if val1 < IR_THRESHOLD and val2 < IR_THRESHOLD:
         # robot is not on the line!
-        print("off line")
+        print('robot is not on the line!')
         conn.sendall('robot is not on the line!')
         online = False
         return [0], [0]
     
+    print('robot is on the line')
     conn.sendall('robot is on the line,')
     online = True
 
@@ -163,144 +218,103 @@ def turn_in_place(direction, conn): # for testing purposes, direction == 1 for c
     reset_encoders()
     enc1_a, enc2_a = read_encoders(ADDRESS, ENCODERONE)
 
-    # set initial speed
-    # speed = round(TOP_SPEED/5)
-    speed = 5
+    # set initial speeds, taking into account direction
+    speed = 15
+    
     # initialize line counter
     lines_turned = 0
 
     # get start time
-    start_time = time.time()
-    start_flag = False
+    start_time = time.time()   
 
     # main loop
-    while True:
-        
-        if not start_flag:
-            start_flag = True
+    while True:    
+        # drive and sleep
+        round_speed = round(speed)
+        if direction == 1:
+            drive_basic(round_speed, -round_speed)
+        else:
+            drive_basic(-round_speed, round_speed)
             
-            if direction == 1:
-                drive_basic(speed, -speed)
+        utime.sleep_ms(5)        
             
-            elif direction == -1:
-                drive_basic(-speed, speed)          
-            
+        # calculate elapsed time and stop if timed out
         elapsed_time = time.time() - start_time
         # conn.sendall(str(elapsed_time))
         if elapsed_time > 10:
+            print('timed out')
             conn.sendall('timed out,')
             drive_basic(0, 0)
             return [-1], [-1]                  
 
+        # read encoders, and calculate distance turned since last line
+        enc1_b, enc2_b = read_encoders(ADDRESS, ENCODERONE)
+        if direction == 1:
+            encoder_distance1 = enc1_b - enc1_a
+            encoder_distance2 = 2**32 - enc2_b
+            
+        else:
+            encoder_distance1 = 2**32 - enc1_b
+            encoder_distance2 = enc2_b - enc2_a
+            
+        # accelerate or decelerate depending on how far robot's turned
+        if (lines_turned < (n_lines-1)) or (min(encoder_distance1, encoder_distance2) < 50):  
+            if speed < TOP_SPEED:  # accelerate
+                speed += .3
+                
+        elif speed > MIN_SPEED:  # decelerate
+            speed -= 1
+            
+        
+        # read sensors 
         val1, val2 = read_sensors()
-
+        
+        # change online flag to False if was True and no longer on line
         if val1 < IR_THRESHOLD and val2 < IR_THRESHOLD:
-            # robot is not on the line!
             if online:
+                print('gone off line')
                 conn.sendall('gone off line,')
             
             online = False
 
-        elif val1 > IR_THRESHOLD or val2 > IR_THRESHOLD:       
+        # if moved on to line, increment lines_turned
+        elif val1 > IR_THRESHOLD and val2 > IR_THRESHOLD:       
             if not online:
                 online = True
                 lines_turned += 1
-                conn.sendall('lines turned : ' + str(lines_turned) + ',')
+                print(f'lines turned : {lines_turned}')
+                conn.sendall('lines turned : ' + str(lines_turned) + ',')   
                 
-                enc1_b, enc2_b = read_encoders(ADDRESS, ENCODERONE)
-                
-                if direction == 1:
-                    encoder_distance1 = enc1_b - enc1_a
-                    encoder_distance2 = 2**32 - enc2_b
-                    
-                else:
-                    encoder_distance1 = 2**32 - enc1_b
-                    encoder_distance2 = enc2_b - enc2_a
-                        
-                
-                # max_distance = max(encoder_distance1, encoder_distance2)
                 line_distances1.append(encoder_distance1)
                 line_distances2.append(encoder_distance2)
 
                 reset_encoders()
                 enc1_a, enc2_a = read_encoders(ADDRESS, ENCODERONE)
 
-                if lines_turned == 2:
-                    conn.sendall('breaking')
-                    drive_basic(0, 0)
-                    break
-                
-    return line_distances1, line_distances2
+        # if missed line, increment lines turned
+        elif min(encoder_distance1, encoder_distance2) > MAX_TURN_DIST:
+            online = True
+            lines_turned += 1
+            print(f'lines turned : {lines_turned}')
+            conn.sendall('missed line, so incremented lines_turned,')  
+            conn.sendall('lines turned : ' + str(lines_turned) + ',')   
             
-def turn_lines(n_lines):
-    # reset encoders
-    reset_encoders()
+            line_distances1.append(encoder_distance1)
+            line_distances2.append(encoder_distance2)
 
-    # set turning direction
-    if n_lines <= 3:
-        direction = 1
-        
-    else:
-        n_lines = 6-n_lines
-        direction = -1    
-           
-    # initialize line counter
-    lines_turned = 0
-
-    # get initial IR values. Note that we are not yet set up for situation where somehow the robot is not on a line.
-    val1, val2 = read_sensors(adc1, adc2)
-    
-    if val1 < IR_THRESHOLD and val2 < IR_THRESHOLD:
-        # robot is lost. Not sure the solution in this case, maybe turn slightly in each direction until line is found?
-        onLine = 0
-        return 1
-    else:
-        onLine = 1
-
-    # calculate how far to turn (this is an approximation that allows the robot to aniticipate when it is almost at the target so that it can decelerate)
-    dist2turn = DIST_TURN * n_lines
-
-    # set initial speed
-    speed = TOP_SPEED
-
-    # turning - main loop
-    while lines_turned < n_lines:        
-        # read encoders and calculate distance turned
-        enc1, enc2 = read_encoders(ADDRESS, ENCODERONE)        
-        if direction == 1:
-            dist_turned = enc1 
-        else:
-            dist_turned = enc2 
-
-        # calculate distance left to turn, and reduce speed if getting close to target
-        distance_left = dist2turn - dist_turned
-        if distance_left < SLOWING_DIST:
-            if speed > MIN_SPEED:
-                speed = round(speed * .95)
-
-        # read from IR sensors and update lines_turned if on a new line
-        val1, val2 = read_sensors(adc1, adc2)
-
-        if val1 > IR_THRESHOLD or val2 > IR_THRESHOLD:
-            if online == 0:
-                online = 1
-                lines_turned += 1
-        else:
-            if online == 1:
-                online = 0
-
-        # set speed or stop the robot if it's reached the number of lines
+            reset_encoders()
+            enc1_a, enc2_a = read_encoders(ADDRESS, ENCODERONE)
+                    
         if lines_turned == n_lines:
-            set_speed(0, SPEED1, 0, SPEED2, writeBuffer, ADDRESS)
-        else:
-            if direction == 1:
-                set_speed(speed, SPEED1, -speed, SPEED2, writeBuffer, ADDRESS)
-            else:
-                set_speed(-speed, SPEED1, speed, SPEED2, writeBuffer, ADDRESS)
-    
-    return enc1, enc2
+            conn.sendall('speed : ' + str(speed) + ',')
+            
+            conn.sendall('breaking,')
+            drive_basic(0, 0)
+            break
+                
+    return line_distances1, line_distances2           
 
-def linear_drive(n_lines):
+def linear_drive(n_lines, conn):
     # reset encoders
     reset_encoders()
 

@@ -3,3 +3,5 @@ ir sensor values
 white line = ~19000
 
 black = ~4000
+
+turn_lines: distance between lines 83 to 137(?)

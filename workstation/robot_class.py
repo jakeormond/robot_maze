@@ -14,18 +14,26 @@ import socket
 
 # robot definition
 class Robot:
-    def __init__(self, robot_id, ip_address, port_number, current_position, current_orientation):
+    def __init__(self, robot_id, ip_address, port_number, position, orientation):
         self.robot_id = robot_id
         self.ip_address = ip_address
         self.port = port_number
-        self.current_position = current_position
-        self.current_orientation = current_orientation
+        self.position = position
+        self.orientation = orientation
+
+    @classmethod
+    def from_yaml(cls, robot_id, yaml_data):
+        ip_address = yaml_data['ip_address']
+        port_number = yaml_data['port']
+        position = 0
+        orientation = 0
+        return cls(robot_id, ip_address, port_number, position, orientation)
 
     def set_new_position(self, new_position):
-        self.current_position = new_position
+        self.position = new_position
     
     def set_new_orientation(self, new_orientation):
-        self.current_orientation = new_orientation
+        self.orientation = new_orientation
 
     def send_command(self, string_input):
         bytes_to_send = bytes(string_input, 'utf8')
@@ -60,3 +68,9 @@ class Robot:
         # print received data
         print(received_data)
         return received_data
+    
+    def __str__(self):
+        return (
+            f'Robot {self.robot_id} at {self.ip_address}, port {self.port} '
+            f'is at position {self.position} and orientation {self.orientation}.'
+        )

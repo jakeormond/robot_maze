@@ -11,6 +11,9 @@ multiple robots at once)
 '''
 
 import socket
+from configurations import read_yaml
+from tkinter import filedialog
+
 
 # robot definition
 class Robot:
@@ -68,9 +71,43 @@ class Robot:
         # print received data
         print(received_data)
         return received_data
-    
+
     def __str__(self):
         return (
             f'Robot {self.robot_id} at {self.ip_address}, port {self.port} '
             f'is at position {self.position} and orientation {self.orientation}.'
         )
+
+
+def initialize_robots_as_dict(yaml_dir=None, positions=None, orientations=None):
+
+    # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
+    if yaml_dir is None:
+        # ask user to select directory from gui
+        yaml_dir = filedialog.askdirectory()
+
+
+    robot_init = read_yaml(yaml_dir)
+
+    robots = {}
+
+    for r in range(3):
+        robots[f'robot{r+1}'] = Robot.from_yaml(r+1, robot_init[f'robot{r+1}'])
+
+        if positions is None:
+            # ask user for new position and orientation
+            robots[f'robot{r+1}'].set_new_position(input('Enter new position: '))
+            robots[f'robot{r+1}'].set_new_orientation(input('Enter new orientation (0, 60, 120, 180, 240, 300): '))
+
+        else:
+            robots[f'robot{r+1}'].set_new_position(positions[r])
+            robots[f'robot{r+1}'].set_new_orientation(orientations[r])
+
+    return robots
+
+def get_robot_positions(robots):
+    # get the positions of the robots from the dict of robot objects.
+    robot_positions = []
+    for r in range(3):
+        robot_positions.append(robots[f'robot{r+1}'].position)
+    return robot_positions

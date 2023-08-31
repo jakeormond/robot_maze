@@ -8,8 +8,11 @@ Finally, note that because the map contains nan values, it is a float array, not
 '''
 
 import numpy as np
+import os
+import tkinter as tk
+from tkinter import filedialog
 
-def generate_map(n_rows, n_cols):
+def generate_map(n_rows, n_cols, directory=None):
     if len(n_cols) == 2:
         n_cols_for_matrix = sum(n_cols)
         platform_map = np.full((n_rows, n_cols_for_matrix), np.nan)
@@ -45,39 +48,79 @@ def generate_map(n_rows, n_cols):
                 platform_map[i, 0::2] = n_cols*(i) + np.arange(1, n_cols+1)
 
     # save platform map to csv file
-    np.savetxt('platform_map.csv', platform_map, delimiter=',')    
+    save_map('platform_map.csv', platform_map, directory)
+
     return platform_map
 
-def restrict_map(platform_map, rows_cols_to_exclude):
+def open_map(directory=None):
+    if directory is None:
+        # ask user to select directory from gui
+        root = tk.Tk()
+        root.withdraw()
+        directory = filedialog.askdirectory()
+    
+    filepath = os.path.join(directory, 'platform_map.csv')
+    
+    # load platform map from csv file
+    platform_map = np.loadtxt(filepath, delimiter=',')
+
+    return platform_map
+
+def get_rows_and_cols_to_exclude(platform_map, start_platform, stop_platform):
+    # find the row and column indices of the start and stop platforms, returned as integers
+    start_row, start_col = np.argwhere(platform_map == start_platform)[0]
+    stop_row, stop_col = np.argwhere(platform_map == stop_platform)[0]
+
+    # find the rows and columns to exclude from the top, bottom, left, and right
+    rows_to_exclude = [start_row, platform_map.shape[0] - stop_row - 1]
+    cols_to_exclude = [start_col, platform_map.shape[1] - stop_col - 1]
+
+    return rows_to_exclude, cols_to_exclude
+
+
+def restrict_map(platform_map, start_platform, stop_platform, directory=None):
     # rows_cols_to_exclude is a list of integers, with (in order) the rows to exclude
-    # from the top and bottom, and the colums to exclude from the left and right.
+    # from the top and bottom, and the columns to exclude from the left and right.
     # Currently, we are excluding the top 4 and bottom 4 rows, and the left 5 and right 3 columns.
     
+    rows_to_exclude, cols_to_exclude = \
+        get_rows_and_cols_to_exclude(platform_map, start_platform, stop_platform)
+
+
     restricted_map = platform_map.copy()
     # save excluded platforms as a list
-    excluded_plats = []
+    restricted_map = restricted_map[rows_to_exclude[0]:-rows_to_exclude[1],
+                                    cols_to_exclude[0]:-cols_to_exclude[1]]
+
+    excluded_plats = []  
+    excluded_plats_temp = []
+    excluded_plats_temp.append(platform_map[:rows_to_exclude[0],:])    
+    excluded_plats_temp.append(platform_map[-rows_to_exclude[1]:,:])    
+    excluded_plats_temp.append(platform_map[:,:cols_to_exclude[0]])
+    excluded_plats_temp.append(platform_map[:,-cols_to_exclude[1]:])
+      
+    # append to excluded_plats  
+    for i in range(4):
+        excluded_plats.extend(excluded_plats_temp[i][~np.isnan(excluded_plats_temp[i])])
+    # cast excluded_plats as integers and sort in ascending order
+    excluded_plats = np.array(excluded_plats, dtype=int)
+    excluded_plats = np.sort(excluded_plats)
+
+    save_map('restricted_map.csv', restricted_map, directory=None)
     
-    for i in range(len(rows_cols_to_exclude)):
-        if i == 0:
-            restricted_map = restricted_map[rows_cols_to_exclude[0]:,:]
-            excluded_plats_temp = platform_map[:rows_cols_to_exclude[0]-1,:]
-        
-        if i == 1:
-            restricted_map = restricted_map[0:-rows_cols_to_exclude[1]:,:]
-            excluded_plats_temp = platform_map[-rows_cols_to_exclude[1],:]
-        
-        if i == 2:
-            restricted_map = restricted_map[:,rows_cols_to_exclude[2]:]
-            excluded_plats_temp = platform_map[:,:rows_cols_to_exclude[2]-1]
-        
-        if i == 3:
-            restricted_map = restricted_map[:,:-rows_cols_to_exclude[3]]         
-           
-        # append to excluded_plats  
-        excluded_plats.extend(excluded_plats_temp[~np.isnan(excluded_plats_temp)])
-
-        # save restricted map to csv file
-        np.savetxt('restricted_map.csv', restricted_map, delimiter=',')
-
     return restricted_map, excluded_plats
 
+def save_map(filename, map, directory=None):
+    if directory is None:
+        # ask user to select directory from gui
+        root = tk.Tk()
+        root.withdraw()
+        directory = filedialog.askdirectory()
+
+    filepath = os.path.join(directory, filename)
+    np.savetxt(filepath, map, delimiter=',')
+
+    return
+
+if __name__ == '__main__':
+    platform_map = generate_map(26, [9, 10])

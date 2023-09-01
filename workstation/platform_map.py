@@ -66,10 +66,13 @@ def open_map(directory=None):
 
     return platform_map
 
-def get_rows_and_cols_to_exclude(platform_map, start_platform, stop_platform):
+def get_rows_and_cols_to_exclude(platform_map, start_platform, stop_platform, extra_row):
     # find the row and column indices of the start and stop platforms, returned as integers
     start_row, start_col = np.argwhere(platform_map == start_platform)[0]
     stop_row, stop_col = np.argwhere(platform_map == stop_platform)[0]
+
+    if extra_row != 0:
+        stop_row = stop_row + extra_row
 
     # find the rows and columns to exclude from the top, bottom, left, and right
     rows_to_exclude = [start_row, platform_map.shape[0] - stop_row - 1]
@@ -78,13 +81,13 @@ def get_rows_and_cols_to_exclude(platform_map, start_platform, stop_platform):
     return rows_to_exclude, cols_to_exclude
 
 
-def restrict_map(platform_map, start_platform, stop_platform, directory=None):
+def restrict_map(platform_map, start_platform, stop_platform, extra_row=0, directory=None):
     # rows_cols_to_exclude is a list of integers, with (in order) the rows to exclude
     # from the top and bottom, and the columns to exclude from the left and right.
     # Currently, we are excluding the top 4 and bottom 4 rows, and the left 5 and right 3 columns.
     
     rows_to_exclude, cols_to_exclude = \
-        get_rows_and_cols_to_exclude(platform_map, start_platform, stop_platform)
+        get_rows_and_cols_to_exclude(platform_map, start_platform, stop_platform, extra_row)
 
 
     restricted_map = platform_map.copy()

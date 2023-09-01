@@ -38,9 +38,9 @@ def create_yaml():
 
 def read_yaml(yaml_dir):
     # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
-    os.chdir(yaml_dir)
+    yaml_path = os.path.join(yaml_dir, 'config.yaml')
     
-    with open('config.yaml') as yaml_file:
+    with open(yaml_path) as yaml_file:
         data = yaml.load(yaml_file, Loader=yaml.FullLoader)
     
     return data

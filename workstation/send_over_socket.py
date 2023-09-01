@@ -1,3 +1,6 @@
+import socket
+import select
+
 def send_over_socket(string_input):
     import socket
 
@@ -38,5 +41,21 @@ def send_over_socket(string_input):
     print(received_data)
             
 
-        
+    def send_over_sockets(robots):
+        # robots is a dictionary of Robot objects
+        # return keys as list
+        robot_keys = list(robots.keys())
+
+        # create a list of tuples containing each robots ip address and port
+        ip_port = [(robots[key].ip_address, robots[key].port) for key in robot_keys]
+
+        # Create socket objects for each server
+        client_sockets = [socket.socket(socket.AF_INET, socket.SOCK_STREAM) for _ in range(3)]
+
+        # Connect to each server
+        for socket_obj, server_address in zip(client_sockets, ip_port):
+            socket_obj.connect(server_address)
+            
+        # Create a list of sockets to monitor for reading
+        sockets_to_monitor = client_sockets
         

@@ -57,6 +57,7 @@ def open_map(directory=None):
         # ask user to select directory from gui
         root = tk.Tk()
         root.withdraw()
+        print('Select directory containing map')
         directory = filedialog.askdirectory()
     
     filepath = os.path.join(directory, 'platform_map.csv')
@@ -127,3 +128,4 @@ def save_map(filename, map, directory=None):
 
 if __name__ == '__main__':
     platform_map = generate_map(26, [9, 10])
+    restricted_map, _ = restrict_map(platform_map, 41, 217, extra_row=1)

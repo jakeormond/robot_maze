@@ -38,45 +38,21 @@ class Robot:
     def set_new_orientation(self, new_orientation):
         self.orientation = new_orientation
 
-    def send_command(self, string_input):
-        bytes_to_send = bytes(string_input, 'utf8')
-        received_data = []
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((self.ip_address, self.port))
-            s.sendall(bytes_to_send)
-           
-            counter = 0
-            
-            while True:
-                counter += 1
-                print('counter : ', counter)
-                data = s.recv(1024)
-
-                # check if data is empty
-                if not data:
-                    break
-                
-                print(f"Received {data!r}")
-                print(data)
-                
-                data = data.decode('utf8')
-                # split data on comma
-                data = data.split(',')
-                # check is any elements are empty and remove them
-                data = [x for x in data if x != '']
-
-                # append to received data
-                received_data.extend(data)
-
-        # print received data
-        print(received_data)
-        return received_data
-
     def __str__(self):
         return (
             f'Robot {self.robot_id} at {self.ip_address}, port {self.port} '
             f'is at position {self.position} and orientation {self.orientation}.'
         )
+
+class Robots:
+    def __init__(self):
+        self.items = {}
+
+    def add_robot(self, robot_ind, robot_init):
+        self.items[f'robot{robot_ind+1}'] = Robot.from_yaml(robot_ind+1, 
+                                    robot_init[f'robot{robot_ind+1}'])
+        
+    
 
 
 def initialize_robots_as_dict(yaml_dir=None, positions=None, orientations=None):
@@ -104,6 +80,9 @@ def initialize_robots_as_dict(yaml_dir=None, positions=None, orientations=None):
             robots[f'robot{r+1}'].set_new_orientation(orientations[r])
 
     return robots
+
+
+
 
 def get_robot_positions(robots):
     # get the positions of the robots from the dict of robot objects.

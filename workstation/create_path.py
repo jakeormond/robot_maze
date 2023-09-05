@@ -16,28 +16,12 @@ class CreatePath:
         self.end = end
         self.avoid = avoid
 
-    def shortest_path(self): # will return a list of paths (i.e. a list of lists)
-        # from the map, we need to find the 2 sets of 3 axes through the start 
-        # end positions.
-        shortest_paths = find_shortest_paths(self.start, self.end, self.map)
-
-
-        # now, we need to find the intersection of the axes
-        # we will do this by finding the intersection of the axes through the
-        # start position with the axes through the end position
+    def shortest_path(self): # will return a dictionary of paths, with keys
+        # indicating the direction of the intersecting axes through each of the
+        # two positions 
+        return find_shortest_paths(self.start, self.end, self.map)
 
         
-        
-        # first, find the indices of the start and end positions in the map
-        pos_ind = {}
-        pos_ind['start'] = np.argwhere(self.map == self.start)
-        pos_ind['end'] = np.argwhere(self.map == self.end)
-
-        n_rows, n_cols = self.map.shape
-
-        #
-    
-
 
 def get_axes(position, map):
 
@@ -90,7 +74,7 @@ def get_axes(position, map):
     axes['ne'] = ne_axis
     return axes
 
-def find_axes_intersection(position1, position2, map):
+def find_shortest_paths(position1, position2, map):
 
     axes1 = get_axes(position1, map)
     axes2 = get_axes(position2, map)
@@ -98,24 +82,31 @@ def find_axes_intersection(position1, position2, map):
     # axes1 and axes2 are dictionaries with keys 'vert', 'nw', and 'ne'
     # and values of lists of positions
     # find the intersections of the various axes
-    intersects = {} 
+    # first, find if they have any identical axes, check if 
+    # axis1[key] == axis2[key] for all keys
     paths = {}
     for key in axes1.keys():
-        intersects[key] = {}
-        paths[key] = {}
+        if axes1[key] == axes2[key]:
+            # if they are identical, then we have found the shortest path
+            ind1a = axes1[key].index(position1)
+            ind1b = axes1[key].index(position2)
+            paths[key] = axes1[key][ind1a:ind1b+1]
+            return paths
+    
+    min_length = np.inf
+    for key in axes1.keys():
         for key2 in axes2.keys():
-            intersects[key][key2] = np.intersect1d(axes1[key], axes2[key2])
+            intersects = np.intersect1d(axes1[key], axes2[key2])
 
-            if len(intersects[key][key2]) == 0:
-                intersects[key][key2] = None
-                paths[key][key2] = None
+            if len(intersects) == 0:
+                continue
                 
             else:
                 # find position1 index in axes1[key]
                 ind1a = axes1[key].index(position1)
                 # find intersect index in axes1[key]
-                intersects[key][key2] = intersects[key][key2][0]
-                ind1b = axes1[key].index(intersects[key][key2]) 
+                intersects = intersects[0]
+                ind1b = axes1[key].index(intersects) 
 
                 if ind1a > ind1b:
                     ind1a, ind1b = ind1b, ind1a
@@ -123,16 +114,40 @@ def find_axes_intersection(position1, position2, map):
                     # reverse path_part1
                     path_part1 = path_part1[::-1]
                 else:
-                    path_part1 = axes1[key][ind1a:ind1b]
+                    path_part1 = axes1[key][ind1a:ind1b+1]
 
                 # position 2
-                print("Key: {key}, Key2: {key2}".format(key=key, key2=key2))
-                ind2a = axes2[key2].index(intersects[key][key2])             
+                ind2a = axes2[key2].index(intersects)
                 ind2b = axes2[key2].index(position2)
-                path_part2 = axes2[key2][ind2a+1:ind2b]
+                path_part2 = axes2[key2][ind2a+1:ind2b+1]
 
-                # concatenate lists
-                paths[key][key2] = path_part1 + path_part2 
+                path_temp = path_part1 + path_part2   
+                path_length = len(path_temp)
 
-    return paths, intersects
+                # concatenate lists              
+                if path_length < min_length:
+                    min_length = path_length
 
+                    paths[key] = {}
+                    paths[key][key2] = path_temp
+                    # remove all other paths
+                    for key3 in paths[key].keys():
+                        if key3 != key2:
+                            del paths[key][key3]
+                    
+
+                elif path_length == min_length:
+                    # if paths[key] already exists, add key2 to it, otherwise create it
+                    if key in paths.keys():
+                        paths[key][key2] = path_temp
+                    else:
+                        paths[key] = {}
+                        paths[key][key2] = path_temp
+
+    return paths
+
+if __name__ == '__main__':
+    import platform_map
+    map = platform_map.open_map(map='restricted_map', directory= 
+                                '/media/jake/LaCie/robot_maze_workspace')
+    paths = find_shortest_paths(91, 131, map)

@@ -52,15 +52,18 @@ def generate_map(n_rows, n_cols, directory=None):
 
     return platform_map
 
-def open_map(directory=None):
+def open_map(map=None, directory=None):
     if directory is None:
         # ask user to select directory from gui
         root = tk.Tk()
         root.withdraw()
         print('Select directory containing map')
         directory = filedialog.askdirectory()
-    
-    filepath = os.path.join(directory, 'platform_map.csv')
+        
+    if map is None:
+        filepath = os.path.join(directory, 'platform_map.csv')
+    else:
+        filepath = os.path.join(directory, map + '.csv')
     
     # load platform map from csv file
     platform_map = np.loadtxt(filepath, delimiter=',')

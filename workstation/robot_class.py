@@ -17,12 +17,13 @@ from tkinter import filedialog
 
 # robot definition
 class Robot:
-    def __init__(self, robot_id, ip_address, port_number, position, orientation):
+    def __init__(self, robot_id, ip_address, port_number, position, orientation, state):
         self.robot_id = robot_id
         self.ip_address = ip_address
         self.port = port_number
         self.position = position
         self.orientation = orientation
+        self.state = state
 
     @classmethod
     def from_yaml(cls, robot_id, yaml_data):
@@ -30,7 +31,8 @@ class Robot:
         port_number = yaml_data['port']
         position = 0
         orientation = 0
-        return cls(robot_id, ip_address, port_number, position, orientation)
+        state = 'stationary'
+        return cls(robot_id, ip_address, port_number, position, orientation, state)
 
     def set_new_position(self, new_position):
         self.position = new_position
@@ -50,10 +52,8 @@ class Robots:
 
     def add_robot(self, robot_ind, robot_init):
         self.items[f'robot{robot_ind+1}'] = Robot.from_yaml(robot_ind+1, 
-                                    robot_init[f'robot{robot_ind+1}'])
-        
+                                    robot_init[f'robot{robot_ind+1}'])      
     
-
 
 def initialize_robots_as_dict(yaml_dir=None, positions=None, orientations=None):
 

@@ -11,19 +11,23 @@ multiple robots at once)
 '''
 
 import socket
+from typing import Any
 from configurations import read_yaml
 from tkinter import filedialog
+import create_path as cp 
+import copy
 
 
 # robot definition
 class Robot:
-    def __init__(self, robot_id, ip_address, port_number, position, orientation, state):
-        self.robot_id = robot_id
+    def __init__(self, robot_id, ip_address, port_number, position, orientation, state, map):
+        self.id = robot_id
         self.ip_address = ip_address
         self.port = port_number
         self.position = position
         self.orientation = orientation
-        self.state = state
+        self.state = state # stationary or moving
+        self.rings = cp.get_rings(self.position, map)
 
     @classmethod
     def from_yaml(cls, robot_id, yaml_data):
@@ -42,17 +46,39 @@ class Robot:
 
     def __str__(self):
         return (
-            f'Robot {self.robot_id} at {self.ip_address}, port {self.port} '
+            f'Robot {self.id} at {self.ip_address}, port {self.port} '
             f'is at position {self.position} and orientation {self.orientation}.'
         )
 
 class Robots:
     def __init__(self):
-        self.items = {}
+        self.members = {}
 
-    def add_robot(self, robot_ind, robot_init):
-        self.items[f'robot{robot_ind+1}'] = Robot.from_yaml(robot_ind+1, 
-                                    robot_init[f'robot{robot_ind+1}'])      
+    # def add_robot(self, robot_ind, robot_init):
+    #    self.items[f'robot{robot_ind+1}'] = Robot.from_yaml(robot_ind+1, 
+    #                                robot_init[f'robot{robot_ind+1}']) 
+
+    def add_robot(self, robot):
+        self.members[f'robot{robot.id}'] = robot   
+
+    def add_robots(self, robot_list):
+        for robot in robot_list:
+            self.add_robot(robot)
+       
+        
+    def get_stat_robot(self):
+        for r in self.members:
+            if self.members[r].state == 'stationary':
+                return self.members[r]
+            
+    def get_moving_robots(self):
+        robots_dict = copy.deepcopy(self.members)
+        for r in robots_dict:
+            if robots_dict[r].state == 'stationary':
+                # remove stationary robot from dictionary
+                robots_dict.pop(r)
+                return robots_dict
+
     
 
 def initialize_robots_as_dict(yaml_dir=None, positions=None, orientations=None):

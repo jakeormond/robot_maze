@@ -175,44 +175,156 @@ def get_all_paths(robots, next_plats, map):
     # if the stationary robot lies at the end of the line of robots, as this 
     # is a special case where the opposited robot will need to move to the 
     # stationary robot's 3rd order ring
+    stat_robot = robots.get_stat_robot()
+    moving_robots = robots.get_moving_robots()
     
     axes = []
+    common_axes = [np.nan] * 2
     for r in range(3):
-        axes.append(get_axes(robots[f'robot{r+1}'].position, map))
+        axes.append(get_axes(robots.members[f'robot{r+1}'].position, map))
 
-        # create 2 element list of nan values
-        common_axes = [np.nan] * 2
+        # create 2 element list of nan values        
         if r != 0:
             for key in axes[r].keys():
                 if axes[r][key] == axes[r-1][key]:
-                    common_axes.append(key)
+                    common_axes[r-1] = key
                     break
-    if common_axes[0] == common_axes[1]: # this special condition is met
-        # so robot that is in stat robots 2nd order ring will need to move to
-        # the stat robot's 3rd order ring
-        pass # will need to implement this later
+    
+    third_ring_robot = None
+    
+    if common_axes[0] == common_axes[1]: # all robots are on the same axis, so need to 
+        # determine if the stationary robot is at the end of the line of robots.
+        # get indices of each robot along the shared axis, and determine if stationary
+        # robot has lowest or highest index
+        r_ind = [np.nan] * 3
+        for r in range(3):
+            r_ind[r] = axes[r][common_axes[0]].index(robots.members[f'robot{r+1}'].position)
+        if r_ind[stat_robot.id - 1] == np.min(r_ind) or r_ind[stat_robot.id - 1] == np.max(r_ind):
+            # stationary robot is at the end of the line of robots so need to determine
+            # which moving robot is at other end, and therefore needs to be move to stat 
+            # 3rd order ring
+            # loop through moving robots dictionary and determine which one is at the other end
+            for r2 in moving_robots.keys():
+                if r_ind[moving_robots[r2].id - 1] == np.max(r_ind) or \
+                      r_ind[moving_robots[r2].id - 1] == np.min(r_ind):
+                    third_ring_robot = f'robot{r+1}'
+                    break
+    
+    # select the initial positions of the moving robots. 
+    # robots need to either move from the stat robots inner ring to its second
+    # order ring, or from its second order ring to its third order ring if it is the 
+    # "third_ring_robot"; if it is in the second order ring but not a "third_ring_robot",
+    # it doesn't need to move initially. 
+    start_pos = {}
+
+    for r in moving_robots.keys():
+        start_pos[r] = []
+        # determine if moving_robots[r] is in star_robot's inner ring
+        if moving_robots[r].position in stat_robot.rings['ring1']:
+            # then initial position will be in stat_robot's second order ring.
+            # find common positions between moving_robts[r] 1st order ring and
+            # stat_robot's second order ring
+            start_pos[r] = np.intersect1d(moving_robots[r].rings['ring1'], 
+                                              stat_robot.rings['ring2'])
+                        
+        elif moving_robots[r].position in stat_robot.rings['ring2']:
+            if third_ring_robot is None:
+                start_pos[r] = moving_robots[r].position
+            elif r == third_ring_robot: # then move to stat robots 3rd order ring
+                start_pos[r] = np.intersect1d(moving_robots[r].rings['ring2'], 
+                                              stat_robot.rings['ring3'])
+            else:
+                # throw an error
+                print('Error: moving robot is in stat robot\'s 2nd order ring but is not the third_ring_robot')
+                return None
+
+    # create 2 versions of the 2nd order ring around the stationary robot, this forms
+    # the bulk of the path
+    generic_ring = {}
+    generic_ring['clockwise'] = copy.deepcopy(stat_robot.rings['ring2']) + \
+                                copy.deepcopy(stat_robot.rings['ring2'])
+    # reverse the generic_ring
+    generic_ring['anticlockwise'] = generic_ring['clockwise'][::-1]
+
+    # create clockwise and anticlockwise paths for each moving robot to each target from 
+    # every starting position
+    paths = {}
+    directions = ['clockwise', 'anticlockwise']
+
+    for r in moving_robots.keys():
+        paths[r] = {}
+        for p in next_plats:
+            paths[r][p] = {}
+            target_rings = get_rings(p, map)
+
+            for s in start_pos[r]:
+                paths[r][p][s] = {}                
+                for d in directions:
+                    paths[r][p][s][d] = {}
+                    if third_ring_robot == r:
+                        # find intersect between clockwise_generic_ring and s 1st order ring 
+                        start_rings = get_rings(s, map)
+                        possible_starts = np.intersect1d(generic_ring[d], 
+                                                         start_rings['ring1'])
+                        # choose the start that occurs latest in the generic_ring;
+                        # start by getting the index of the start in the generic_ring
+                        start_ind = np.nan * len(possible_starts)
+                        for i in range(len(possible_starts)):
+                            start_ind[i] = generic_ring[d].index(possible_starts[i])
+                        # choose the start with the largest index
+                        start = possible_starts[np.argmax(start_ind)]
+
+                    else:
+                        start = s
+
+                    # truncate generic_ring so that it starts at start
+                    start_ind = generic_ring[d].index(start)
+                    generic_ring_trunc = generic_ring[d][start_ind:]
+                    # remove any duplicate values in generic_ring_trunc
+                    counter = 0
+                    while counter <= len(generic_ring_trunc):
+                        # find generic_ring_trunc[counter] in generic_ring_trunc[counter+1:]
+                        if generic_ring_trunc[counter] in generic_ring_trunc[counter+1:]:
+                            # get index of repeated value
+                            ind = generic_ring_trunc[counter+1:].index(generic_ring_trunc[counter])
+                            generic_ring_trunc = generic_ring_trunc[:ind]
+                            break
+
+                        
+                    
+                    # find intersect between generic_ring_trunc and target_rings['ring1']
+                    possible_ends = np.intersect1d(generic_ring_trunc, 
+                                                     target_rings['ring1'])
+                    # choose the end that occurs earliest in the generic_ring_trunc;    
+                    last_plat = generic_ring_trunc[np.where(np.isin(generic_ring_trunc, possible_ends))[0][0]]
+                    # find last_plat index in generic_ring_trunc
+                    end = generic_ring_trunc.index(last_plat)
 
 
-    moving_rings = get_rings(robot, map)
-    stat_rings = get_rings(stat_robot, map)
+                    generic_ring_trunc = generic_ring_trunc[:end]
 
-    for p in next_plats:
-        final_pos_rings = get_rings(p, map)
+                    path_temp = [s] + generic_ring_trunc
+                    # remove any values repeated in path_temp
+                    counter = 1
+                    while counter <= len(path_temp):
+                        if path_temp[counter-1] == path_temp[counter]:
+                            del path_temp[counter]
+                        
+                    paths[r][p][s][d]  = path_temp
+    
+    return paths
+
+              
 
 
 
 
-
-
-
-
-
-def get_rings(robot, map):
+def get_rings(position, map):
     '''  note that currently, if the position is too close to the maze edge,
     the 3rd order ring will have some gaps; currently, this shouldn't 
     cause any problems. 
     '''
-    axes = get_axes(robot.position, map)
+    axes = get_axes(position, map)
     # axes_names = list(axes.keys())
     axes_names = ['vert', 'ne', 'nw']
     vertices = {}
@@ -222,7 +334,7 @@ def get_rings(robot, map):
         vertices[f'ring{o+1}'] = [np.nan] * 6
 
     for a in axes_names:
-        pos_ind = axes[a].index(robot.position)
+        pos_ind = axes[a].index(position)
 
         if a == 'vert':
             vertex_ind = [0,3]
@@ -276,5 +388,14 @@ if __name__ == '__main__':
     # paths = find_shortest_paths(91, 72, map)
 
     import robot_class
-    robot1 = robot_class.Robot(1, '192.100.0.101', 1025, 43, 0)
-    rings = get_rings(robot1, map)
+    robot1 = robot_class.Robot(1, '192.100.0.101', 1025, 43, 0, 'stationary', map)
+    # rings = get_rings(robot1, map)
+    robot2 = robot_class.Robot(2, '192.100.0.102', 1026, 53, 0, 'moving', map)
+    robot3 = robot_class.Robot(3, '192.100.0.103', 1027, 63, 0, 'moving', map)
+
+    robots = robot_class.Robots()
+    robots.add_robots([robot1, robot2, robot3])
+    
+    next_plats = [52, 53]
+
+    paths = get_all_paths(robots, next_plats, map)

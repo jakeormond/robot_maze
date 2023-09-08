@@ -15,6 +15,7 @@ from typing import Any
 from configurations import read_yaml
 from tkinter import filedialog
 import create_path as cp 
+import platform_map as mp
 import copy
 
 
@@ -23,23 +24,23 @@ class Robot:
     def __init__(self, robot_id, ip_address, port_number, position, orientation, state, map):
         self.id = robot_id
         self.ip_address = ip_address
-        self.port = port_number
+        self.port = port_number        
         self.position = position
         self.orientation = orientation
         self.state = state # stationary or moving
-        self.rings = cp.get_rings(self.position, map)
 
     @classmethod
     def from_yaml(cls, robot_id, yaml_data):
         ip_address = yaml_data['ip_address']
         port_number = yaml_data['port']
-        position = 0
-        orientation = 0
+        position = None
+        orientation = None
         state = 'stationary'
-        return cls(robot_id, ip_address, port_number, position, orientation, state)
+        return cls(robot_id, ip_address, port_number, position, orientation, state, map)
 
     def set_new_position(self, new_position):
         self.position = new_position
+        self.map_ind = self.get_map_ind(new_position)
     
     def set_new_orientation(self, new_orientation):
         self.orientation = new_orientation
@@ -65,7 +66,12 @@ class Robots:
         for robot in robot_list:
             self.add_robot(robot)
        
-        
+    def get_positions(self):
+        positions = []
+        for r in self.members:
+            positions.append(self.members[r].position)
+        return positions
+
     def get_stat_robot(self):
         for r in self.members:
             if self.members[r].state == 'stationary':
@@ -78,11 +84,17 @@ class Robots:
                 # remove stationary robot from dictionary
                 robots_dict.pop(r)
                 return robots_dict
+    
+    def get_robot(self, robot_id):
+        return self.members[f'robot{robot_id}']
+    
+    def get_robot_ids(self):
+        return list[self.members.keys()]
 
     
 
 def initialize_robots_as_dict(yaml_dir=None, positions=None, orientations=None):
-
+    
     # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
     if yaml_dir is None:
         # ask user to select directory from gui

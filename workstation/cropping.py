@@ -5,7 +5,7 @@ recording in Bonsai.
 import numpy as np
 
 # note that this has been translated by copilot and is untested!!!
-def getCropNums(platforms, plat_coor):
+def get_crop_nums(platforms, plat_coor):
     plat_centre = np.empty((len(platforms), 2))
     for p in range(len(platforms)):
         plat_centre[p,:] = plat_coor[platforms[p]].Centre

@@ -20,9 +20,13 @@ class Map:
             self.platform_map = generate_map(n_rows, n_cols)
             self.restricted_map = None
             self.excluded_plats = None
+            self.goal_position = None
         
         else:
             self.open_map(directory=directory)
+
+    def set_goal_position(self, goal_position):
+        self.goal_position = goal_position
 
     def restrict_map(self, start_platform, stop_platform, extra_row=0):
         self.restricted_map, self.excluded_plats = \
@@ -168,6 +172,18 @@ class Map:
 
         ind = axis.index(position)
         return axis[ind + distance]
+    
+    def cartesian_distance(self, position1, position2):
+        row_dist = 1
+        col_dist = (row_dist * 0.5)/np.tan(np.radians(30))
+
+        ind1 = self.get_indices_of_postion(position1)
+        ind2 = self.get_indices_of_postion(position2)
+
+        row_dist = np.abs(ind1[0] - ind2[0])
+        col_dist = np.abs(ind1[1] - ind2[1])
+
+        return np.sqrt(row_dist**2 + col_dist**2)
     
     @staticmethod
     def add_to_dir(direction, angle):

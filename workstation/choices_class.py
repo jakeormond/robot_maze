@@ -49,4 +49,33 @@ class Choices:
         self.data.to_csv(f'{data_dir}/{self.name}.csv', index=False)
         
     
+if __name__ == '__main__':
+    from time import sleep
+    choices = Choices()
+    sleep(1)
 
+    choices.start_choice(91)
+    sleep(1)
+    choices.register_choice(81, 101)
+
+    sleep(1)   
+    choices.start_choice(101)
+    choices.register_choice(111, 110)
+
+    sleep(1)   
+    choices.start_choice(110)
+    choices.register_choice(101, 119)
+
+    sleep(1)   
+    choices.start_choice(101)
+    choices.register_choice(91, 92)
+
+    sleep(1)   
+    choices.start_choice(91)
+    choices.register_choice(101, 82)
+
+    sleep(1)   
+    choices.start_choice(101)
+    choices.register_choice(111, 110)
+
+    sleep(1)

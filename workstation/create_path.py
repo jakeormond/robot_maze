@@ -12,12 +12,21 @@ import platform_map as mp
 
 # CreatePath should take a start and end position, and optionally a 
 # list of positions to avoid
-class CreatePath:
-    def __init__(self, platform_map, start, end, avoid=None):
+class CreatePaths:
+    def __init__(self, robots, map, next_plats):
         self.map = map
-        self.start = start
-        self.end = end
-        self.avoid = avoid
+        
+        # get the starting positions of the next paths
+        self.initial_positions = get_starting_positions(robots, map)
+
+        # get all possible paths
+        self.all_paths = get_all_paths(robots, next_plats, map)
+
+        # select the optimal paths
+        self.optimal_paths = select_optimal_paths(self.all_paths, robots, next_plats, map)
+
+
+    
 
 
 def get_starting_positions(robots, map):
@@ -126,6 +135,90 @@ def get_starting_positions(robots, map):
        
     return initial_positions
               
+def get_next_positions(robots, map, choices, difficulty):
+    ''' identify the stationary robot, and pseudo-randomly
+    pick the next to positions for the moving robots, such that 
+    previous options are avoided if possible. '''
+
+    # get stationary robot
+    stat_robot = robots.get_stat_robot()
+    stat_robot_pos = stat_robot.position
+
+    # get first order ring around stationary robot
+    possible_targets = np.sort(map.get_ring_around_position(stat_robot_pos, 1))
+    # remove positions that are in excluded_positions
+    excluded_positions = map.excluded_plats
+    possible_targets = np.setdiff1d(possible_targets, excluded_positions)
+    # get number of possible target pairs
+    n_possible_pairs = len(possible_targets) * (len(possible_targets) - 1) / 2
+    # create array containing all possible pairs
+    possible_pairs = np.zeros((int(n_possible_pairs), 2))
+    pair_ind = 0
+    for i in range(len(possible_targets)-1):
+        for i2 in range(i+1, len(possible_targets)):
+            possible_pairs[pair_ind] = [possible_targets[i], possible_targets[i2]]
+            pair_ind += 1
+    
+    # find what, if any, choices have previously been made from stat_robot_pos using 
+    # the choices.data pandas dataframe
+    choices.data = choices.data[choices.data['start_pos'] == stat_robot_pos]
+    # extract the chosen and unchosen positions to a numpy array and remove 
+    # any repeated pairs
+    n_prev_pairs = 0
+    if choices.data.empty == False:
+        previous_pairs = choices.data[['chosen_pos', 'unchosen_pos']].to_numpy()
+        previous_pairs = previous_pairs.astype(int)
+        for p in range(previous_pairs.shape[0]):
+            previous_pairs[p] = np.sort(previous_pairs[p])
+        # remove duplicate pairs
+        previous_pairs = np.unique(previous_pairs, axis=0)
+        n_prev_pairs = previous_pairs.shape[0]
+
+        if n_prev_pairs != n_possible_pairs: # remove common pairs
+            for p in previous_pairs:
+                if p in possible_pairs:
+                    # find row index of p in possible pairs
+                    row_ind = np.where(np.all(possible_pairs == p, axis=1))[0][0]
+                    # delete row from possible_pairs
+                    possible_pairs = np.delete(possible_pairs, row_ind, axis=0)
+    
+    # randomly reorder possible_pairs
+    np.random.shuffle(possible_pairs)
+
+    # loop through the pairs, breaking if a pair satisfies the difficulty
+    # criteria
+    next_positions = None
+    while_counter = 0
+    while next_positions == None:
+        for p in possible_pairs:
+            # get cartesian distance from stat_robot_pos
+            stat_dist = map.cartesian_distance(stat_robot_pos, map.goal_position)
+
+            # get cartesian distance from p[0] and p[1]
+            p0_dist = map.cartesian_distance(p[0], map.goal_position)
+            p1_dist = map.cartesian_distance(p[1], map.goal_position)
+
+            if difficulty == 'hard':  
+                if while_counter == 0:
+                    if p0_dist < stat_dist or p1_dist < stat_dist:
+                        next_positions = p
+                        break
+                    else:
+                        if p0_dist == stat_dist or p1_dist == stat_dist:
+                            next_positions = p
+                            break           
+            
+            else:
+                if while_counter == 0:
+                    if p0_dist < stat_dist and p1_dist < stat_dist:
+                        next_positions = p
+                        break
+                else:
+                    if p0_dist < stat_dist or p1_dist < stat_dist:
+                        next_positions = p
+                        break
+    
+    return next_positions
          
 def get_all_paths(robots, next_plats, map):
     ''' determines the paths the moving robot can take to reach
@@ -315,10 +408,14 @@ def select_optimal_paths(paths, robots, next_plats, map):
         
     return optimal_paths
 
+
+
+
+
 if __name__ == '__main__':
     import platform_map
-    directory = '/media/jake/LaCie/robot_maze_workspace'
-    # directory = 'C:/Users/Jake/Desktop/map_of_platforms'
+    # directory = '/media/jake/LaCie/robot_maze_workspace'
+    directory = 'C:/Users/Jake/Desktop/map_of_platforms'
     # map = platform_map.open_map(map='restricted_map', directory=directory)
     map = Map(directory=directory)
     # paths = find_shortest_paths(91, 72, map)

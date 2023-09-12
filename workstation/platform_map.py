@@ -174,17 +174,38 @@ class Map:
         return axis[ind + distance]
     
     def cartesian_distance(self, position1, position2):
-        row_dist = 1
-        col_dist = (row_dist * 0.5)/np.tan(np.radians(30))
-
-        ind1 = self.get_indices_of_postion(position1)
-        ind2 = self.get_indices_of_postion(position2)
-
-        row_dist = np.abs(ind1[0] - ind2[0])
-        col_dist = np.abs(ind1[1] - ind2[1])
+        cartesian_pos1 = self.cartesian_position(position1)
+        cartesian_pos2 = self.cartesian_position(position2)
+        
+        col_dist = cartesian_pos1[0] - cartesian_pos2[0]
+        row_dist = cartesian_pos1[1] - cartesian_pos2[1]
 
         return np.sqrt(row_dist**2 + col_dist**2)
     
+    def cartesian_position(self, position):
+        row_unit_dist = 1
+        col_unit_dist = 1/np.tan(np.radians(30))
+
+        ind = self.get_indices_of_postion(position)
+
+        row_pos = ind[0] * row_unit_dist
+        col_pos = ind[1] * col_unit_dist
+
+        return [col_pos, row_pos]
+    
+    def platform_from_cartesian_position(self, cartesian_position):
+        row_unit_dist = 1
+        col_unit_dist = 1/np.tan(np.radians(30))
+
+        row_pos = cartesian_position[1] / row_unit_dist
+        col_pos = cartesian_position[0] / col_unit_dist
+
+        return self.platform_map[int(row_pos), int(col_pos)]
+    
+    def platform_list(self):
+        return np.unique(self.platform_map[~np.isnan(self.platform_map)])
+    
+       
     @staticmethod
     def add_to_dir(direction, angle):
         new_angle = direction + angle

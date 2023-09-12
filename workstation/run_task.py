@@ -5,6 +5,7 @@ Code to run the task. In the future, this will be implemented as a gui.
 from configurations import read_yaml
 from robot_class import Robot
 import create_path as cp
+from create_path import Paths
 from choices_class import Choices
 from robot_class import get_robot_positions, initialize_robots_as_dict
 from cropping import get_crop_nums
@@ -81,7 +82,29 @@ while True:
     next_platforms = cp.get_next_positions(robots, map, trial_data, difficulty)
 
     # contstruct paths 
-    paths = cp.construct_paths(robots, next_platforms, map)
+    paths = Paths(robots, next_platforms, map)
 
-    # make figure of paths
-    
+    # display figure of paths
+    paths.plot_paths()
+
+    # construct the robot commands
+    robotInput, robotsFinal = cp.paths_to_commands(robots, paths, map)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # close figure
+    cp.close_paths_plot(paths_fig)
+

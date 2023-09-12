@@ -12,22 +12,26 @@ import platform_map as mp
 
 # CreatePath should take a start and end position, and optionally a 
 # list of positions to avoid
-class CreatePaths:
+class Paths:
     def __init__(self, robots, map, next_plats):
         self.map = map
-        
-        # get the starting positions of the next paths
-        self.initial_positions = get_starting_positions(robots, map)
 
+        self.robots = robots
+        
         # get all possible paths
         self.all_paths = get_all_paths(robots, next_plats, map)
 
         # select the optimal paths
         self.optimal_paths = select_optimal_paths(self.all_paths, robots, next_plats, map)
 
+    def plot_paths(self):
+        fig_handle = plot_paths(self.map, self.robots, self.optimal_paths)
+        self.fig_handle = fig_handle
 
-    
-
+    def close_paths_plot(self):
+        close_paths_plot(self.fig_handle)
+        self.fig_handle = None
+        
 
 def get_starting_positions(robots, map):
     ''' the starting positions of the next path are determined by
@@ -408,9 +412,158 @@ def select_optimal_paths(paths, robots, next_plats, map):
         
     return optimal_paths
 
+def construct_paths(robots, next_plats, map):
+    # get all possible paths
+    all_paths = get_all_paths(robots, next_plats, map)
+
+    # select the optimal paths
+    optimal_paths = select_optimal_paths(all_paths, robots, next_plats, map)
+
+    return optimal_paths
+
+def paths_to_commands(robots, paths, map):
+    ''' converts the paths in paths to commands that can be sent to the robots.
+     The commands take the form of a series of turns and linear movements: 
+      e.g. the command [2,1,4,2] would tell the robot to turn clockwise by
+      2 lines, then move forward 1 line, then turn counter-clockwise by 4 
+      (i.e. 6-2) lines, then forward 2 lines'''
+    
+    # get the moving robots
+    moving_robots = robots.get_moving_robots()
+
+    # loop through each robot and convert its path to a series of commands
+    for key, path in paths.items():
+
+        command = []
+
+        # get starting position and direction
+        start_pos = moving_robots[key].position
+        start_direction = moving_robots[key].orientation
 
 
 
+    commands = {}
+    for key, path in paths.items():
+        commands[key] = []
+        for p in path:
+            # get direction from current position to p
+            _, direction = map.get_direction_from_to(robots.members[key].position, p)
+            # get command from direction
+            commands[key].append(map.get_command_from_direction(direction))
+    
+    return commands
+
+
+def plot_paths(map, robots, optimal_paths):
+    ''' plots the paths in optimal_paths on the map. '''
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as patches
+    
+    # create empty list of platforms for setting axis limits
+    # create list of 2 empty lists 
+    platforms = [[], []]
+
+    # create figure with 2 subplots arranged horizontally
+    fig, ax = plt.subplots(1, 2, figsize=(20,10))
+
+    # get stationary robot position 
+    stat_robot = robots.get_stat_robot()
+    stat_robot_pos = stat_robot.position
+    # plot hexagon at stat_robot_pos
+    for a in range(2):
+        platforms[a].append(stat_robot_pos)
+        draw_platform(map, stat_robot_pos, ax[a], color='b')
+
+    # get moving robot positions
+    moving_robots = robots.get_moving_robots()
+    mov_colors = [['r', 'g'], ['tab:red', 'tab:green']]
+    # plot hexagons at moving robot positions
+    for a in range(2):
+        c_ind = 0
+        for key, r in moving_robots.items():
+            platforms[a].append(r.position)        
+            draw_platform(map, r.position, ax[a], color=mov_colors[a][c_ind])
+            c_ind += 1
+
+    # plot optimal paths in second subplot
+    c_ind = 0
+    for key, path in optimal_paths.items():
+        color=mov_colors[0][c_ind]
+        c_ind += 1
+        for p in path:
+            platforms[1].append(p)
+            draw_platform(map, p, ax[1], color=color)
+
+    # set axis limits and reverse y axis
+    x_min = None
+    x_max = None
+    y_min = None
+    y_max = None
+
+    platforms_all = platforms[0] + platforms[1]
+    for p in platforms_all:
+        plat_pos = map.cartesian_position(p)
+        if x_min == None or plat_pos[0] < x_min:
+            x_min = plat_pos[0]
+        if x_max == None or plat_pos[0] > x_max:
+            x_max = plat_pos[0]
+        if y_min == None or plat_pos[1] < y_min:
+            y_min = plat_pos[1]
+        if y_max == None or plat_pos[1] > y_max:
+            y_max = plat_pos[1]
+
+    # plot all other platforms within the axis limits as white hexagons
+    for a in range(2):
+        for p in map.platform_list():
+            if p not in platforms[a]:
+                pos = map.cartesian_position(p)
+                if pos[0] >= x_min-1 and pos[0] <= x_max+1 and \
+                    pos[1] >= y_min-1 and pos[1] <= y_max+1:
+                    draw_platform(map, p, ax[a], color='w') 
+
+    # set axis limits
+    for a in ax:
+        a.set_xlim(x_min-1, x_max+1)
+        a.set_ylim(y_min-1, y_max+1)
+
+        #  flip y axis
+        a.invert_yaxis()
+
+        # make x and y axis scales equal
+        a.set_aspect('equal')
+
+        for t in a.texts:
+            t.set_clip_on(True)
+
+    plt.show()
+
+    # return the figure handle
+    return fig
+
+def close_paths_plot(fig):
+    import matplotlib.pyplot as plt
+    plt.close(fig)
+
+def draw_platform(map, pos, ax, color='r'):
+    ''' draws a platform on the map '''
+    import matplotlib.patches as patches
+
+    plat_pos = map.cartesian_position(pos)
+
+    # draw a hexagon at plat_pos with edges of length 1
+    hexagon = patches.RegularPolygon((plat_pos[0], plat_pos[1]),
+                                    numVertices=6, radius=1,
+                                    orientation=np.pi/2,
+                                    facecolor=color, edgecolor='k')
+    ax.add_patch(hexagon)
+
+    # overlay the platform number
+    text_col = 'k' if color == 'w' else 'w'
+    ax.text(plat_pos[0], plat_pos[1], pos, ha='center', va='center', color=text_col)
+
+    return hexagon
+
+   
 
 if __name__ == '__main__':
     import platform_map
@@ -436,3 +589,9 @@ if __name__ == '__main__':
     paths = get_all_paths(robots, next_plats, map)
     optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
     print(optimal_paths)
+
+    # plot_paths(map, robots, optimal_paths)
+    
+    paths_to_commands(robots, optimal_paths, map)
+    
+    jake = 1

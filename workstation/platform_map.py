@@ -122,7 +122,8 @@ class Map:
     
     def get_direction_from_to(self, position1, position2):
         # get the direction from position1 to position2
-        # returns 'vert', 'nw', or 'ne'. MUST BE ON SAME AXIS!
+        # returns tuple of string 'vert', 'nw', or 'ne' and value in degrees.
+        # MUST BE ON SAME AXIS!
         axes1 = self.get_axes(position1)
         axes2 = self.get_axes(position2)
 
@@ -207,13 +208,13 @@ class Map:
     
        
     @staticmethod
-    def add_to_dir(direction, angle):
-        new_angle = direction + angle
-        if new_angle >= 360:
-            new_angle = new_angle - 360 
-        elif new_angle < 0:
-            new_angle = new_angle + 360
-        return new_angle
+    def add_to_dir(direction1, direction2):
+        new_direction = direction1 + direction2
+        if new_direction >= 360:
+            new_direction = new_direction - 360 
+        elif new_direction < 0:
+            new_direction = new_direction + 360
+        return new_direction
 
 
 

@@ -9,6 +9,8 @@ import copy
 import platform_map as pm
 from platform_map import Map
 import platform_map as mp  
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 # CreatePath should take a start and end position, and optionally a 
 # list of positions to avoid
@@ -431,34 +433,56 @@ def paths_to_commands(robots, paths, map):
     # get the moving robots
     moving_robots = robots.get_moving_robots()
 
+    commands = {}
+
     # loop through each robot and convert its path to a series of commands
     for key, path in paths.items():
-
         command = []
 
         # get starting position and direction
         start_pos = moving_robots[key].position
         start_direction = moving_robots[key].orientation
+        
+        # check if path begins with start positions; if it does, this  indicates
+        # that the robot needs to wait for the other robot to move out of the way.
+        if start_pos == path[0]:
+            command = [0, 0]
+        else:
+            path = [start_pos] + path
 
-
-
-    commands = {}
-    for key, path in paths.items():
-        commands[key] = []
-        for p in path:
+        # loop through each position in path
+        linear_counter = 0
+        prev_direction = start_direction
+        for i, p in enumerate(path[:-1]):
             # get direction from current position to p
-            _, direction = map.get_direction_from_to(robots.members[key].position, p)
-            # get command from direction
-            commands[key].append(map.get_command_from_direction(direction))
-    
+            _, direction = map.get_direction_from_to(p, path[i+1])
+
+            # if direction is not the same as prev_direction, then set the linear
+            # distance from the incremented linear_counter, and then calculate turn
+            if direction != prev_direction and i > 0:
+                    command.append(linear_counter)
+                    linear_counter = 0
+            if i == 0 or direction != prev_direction:
+                turn_degrees = Map.add_to_dir(direction, -prev_direction) # calculating difference
+                turn_lines = turn_degrees / 60
+                command.append(turn_lines)
+                prev_direction = direction
+            linear_counter += 1
+        
+        # append final linear_counter to command
+        command.append(linear_counter)
+
+        
+        command = [command[:-1], [0, command[-1]]]
+
+        commands[key] = command
+ 
     return commands
 
 
 def plot_paths(map, robots, optimal_paths):
     ''' plots the paths in optimal_paths on the map. '''
-    import matplotlib.pyplot as plt
-    import matplotlib.patches as patches
-    
+       
     # create empty list of platforms for setting axis limits
     # create list of 2 empty lists 
     platforms = [[], []]
@@ -495,22 +519,30 @@ def plot_paths(map, robots, optimal_paths):
             draw_platform(map, p, ax[1], color=color)
 
     # set axis limits and reverse y axis
-    x_min = None
-    x_max = None
-    y_min = None
-    y_max = None
+    # x_min = None
+    # x_max = None
+    # y_min = None
+    # y_max = None
 
-    platforms_all = platforms[0] + platforms[1]
-    for p in platforms_all:
-        plat_pos = map.cartesian_position(p)
-        if x_min == None or plat_pos[0] < x_min:
-            x_min = plat_pos[0]
-        if x_max == None or plat_pos[0] > x_max:
-            x_max = plat_pos[0]
-        if y_min == None or plat_pos[1] < y_min:
-            y_min = plat_pos[1]
-        if y_max == None or plat_pos[1] > y_max:
-            y_max = plat_pos[1]
+    # platforms_all = platforms[0] + platforms[1]
+    # for p in platforms_all:
+    #     plat_pos = map.cartesian_position(p)
+    #     if x_min == None or plat_pos[0] < x_min:
+    #         x_min = plat_pos[0]
+    #     if x_max == None or plat_pos[0] > x_max:
+    #         x_max = plat_pos[0]
+    #     if y_min == None or plat_pos[1] < y_min:
+    #         y_min = plat_pos[1]
+    #     if y_max == None or plat_pos[1] > y_max:
+    #         y_max = plat_pos[1]
+
+    
+    stat_cart_pos = map.cartesian_position(stat_robot_pos)
+    axis_half_width = 5
+    x_min = stat_cart_pos[0] - axis_half_width
+    x_max = stat_cart_pos[0] + axis_half_width
+    y_min = stat_cart_pos[1] - axis_half_width
+    y_max = stat_cart_pos[1] + axis_half_width
 
     # plot all other platforms within the axis limits as white hexagons
     for a in range(2):
@@ -535,7 +567,7 @@ def plot_paths(map, robots, optimal_paths):
         for t in a.texts:
             t.set_clip_on(True)
 
-    plt.show()
+    plt.show(block=False)
 
     # return the figure handle
     return fig
@@ -567,31 +599,27 @@ def draw_platform(map, pos, ax, color='r'):
 
 if __name__ == '__main__':
     import platform_map
-    # directory = '/media/jake/LaCie/robot_maze_workspace'
-    directory = 'C:/Users/Jake/Desktop/map_of_platforms'
+    directory = '/media/jake/LaCie/robot_maze_workspace'
+    # directory = 'C:/Users/Jake/Desktop/map_of_platforms'
     # map = platform_map.open_map(map='restricted_map', directory=directory)
     map = Map(directory=directory)
-    # paths = find_shortest_paths(91, 72, map)
 
     import robot_class
-    robot1 = robot_class.Robot(1, '192.100.0.101', 1025, 63, 0, 'moving', map)
-    # rings = get_rings(robot1, map)
-    robot2 = robot_class.Robot(2, '192.100.0.102', 1026, 53, 0, 'moving', map)
-    # robot3 = robot_class.Robot(3, '192.100.0.103', 1027, 73, 0, 'moving', map)
-    robot3 = robot_class.Robot(3, '192.100.0.103', 1027, 43, 0, 'stationary', map)
-    # robot3 = robot_class.Robot(3, '192.100.0.103', 1027, 82, 0, 'stationary', map)
+    robot1 = robot_class.Robot(1, '192.100.0.101', 1025, 72, 0, 'moving', map)
+    robot2 = robot_class.Robot(2, '192.100.0.102', 1026, 81, 0, 'stationary', map)
+    robot3 = robot_class.Robot(3, '192.100.0.103', 1027, 91, 0, 'moving', map)
 
     robots = robot_class.Robots()
     robots.add_robots([robot1, robot2, robot3])
 
-    next_plats = [33, 24]    
+    next_plats = [90, 71]    
     # initial_positions = get_starting_positions(robots, map)
     paths = get_all_paths(robots, next_plats, map)
     optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
-    print(optimal_paths)
+    # print(optimal_paths)
 
-    # plot_paths(map, robots, optimal_paths)
+    fig = plot_paths(map, robots, optimal_paths)
     
-    paths_to_commands(robots, optimal_paths, map)
-    
+    commands = paths_to_commands(robots, optimal_paths, map)
+    plt.show()
     jake = 1

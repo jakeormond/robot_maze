@@ -10,6 +10,7 @@ from choices_class import Choices
 from robot_class import get_robot_positions, initialize_robots_as_dict
 from cropping import get_crop_nums
 import platform_map as mp
+import send_over_socket as sos
 import tkinter as tk
 from tkinter import filedialog
 import os
@@ -88,6 +89,7 @@ while True:
     paths.plot_paths()
 
     # send commands to robots
+    received_data = sos.send_over_sockets_select(robots, paths)
     
 
 

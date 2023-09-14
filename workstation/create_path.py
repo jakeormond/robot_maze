@@ -15,8 +15,8 @@ import matplotlib.patches as patches
 # CreatePath should take a start and end position, and optionally a 
 # list of positions to avoid
 class Paths:
-    def __init__(self, robots, map, next_plats, time_per_turn = 0.5, time_per_line = 1.):
-        self.map = map
+    def __init__(self, robots, next_plats, map, \
+                 time_per_turn = 0.5, time_per_line = 1.):
        
         # get all possible paths
         self.all_paths = get_all_paths(robots, next_plats, map)
@@ -31,9 +31,8 @@ class Paths:
         self.time_per_line = time_per_line
         
         self.command_strings, self.durations, self.command_numeric  = \
-            paths_to_commands(robots, self.optimal_paths, map)
-
-        
+            paths_to_commands(robots, self.optimal_paths, map, \
+                              self.time_per_turn, self.time_per_line)        
 
     def plot_paths(self):
         fig_handle = plot_paths(self.map, self.robots, self.optimal_paths)

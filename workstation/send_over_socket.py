@@ -3,6 +3,11 @@ import select
 import threading
 import queue
 
+# Define constants
+BUFFER_SIZE = 1024
+TIMEOUT = 10
+NUM_COMMANDS = 2    
+
 def send_over_socket(string_input, HOST, PORT):
     import socket
 
@@ -46,6 +51,7 @@ def send_over_socket(string_input, HOST, PORT):
             
 
 def send_over_sockets_select(robots, paths):
+      
     # get commands
     commands = paths.command_strings
     # get robot keys
@@ -54,27 +60,41 @@ def send_over_sockets_select(robots, paths):
     # create a list of tuples containing each robots ip address and port
     server_address = [(robots.members[key].ip_address, robots[key].port) for key in robot_keys]
 
-    NUM_COMMANDS = 2
-
     for c in range(NUM_COMMANDS):
         # Create socket objects for each server
         sockets = [socket.socket(socket.AF_INET, socket.SOCK_STREAM) for _ in range(len(robot_keys))]
         bytes_to_send = [bytes(commands[key][c], 'utf8') for key in robot_keys] 
-        received_data = [[], []]
+        received_data = [[] for _ in range(len(robot_keys))]
 
         # Connect to each server
         for r, s in enumerate(sockets):
-            s.connect(server_address[s])
-            s.sendall(bytes_to_send[s])
+            try:
+                    s.connect(server_address[r])
+                    s.sendall(bytes_to_send[r])
+            except (socket.error, ConnectionRefusedError) as e:
+                print(f"Error connecting to {robot_keys[r]}: {e}")
+                print("Try rebooting it and then press enter to continue")
+                # pause the program while the user reboots the robot
+                input(" ")
+
+                try:
+                    # try to connect again
+                    s.connect(server_address[r])
+                    s.sendall(bytes_to_send[r])
+                except (socket.error, ConnectionRefusedError) as e:
+                    print(f"Reconnection to  {robot_keys[r]} failed: {e}")
+                    print("Aborting")
+                    return
         
         while True:
-            readable, _, _ = select.select(sockets, [], [], 10)
+            readable, _, _ = select.select(sockets, [], [], TIMEOUT)
 
             for r, s in enumerate(readable):
-                data = s.recv(1024)
+                data = s.recv(BUFFER_SIZE)
 
                 # check if data is empty
                 if not data:
+                    s.close()
                     break
                 
                 print(f"Received {data!r}")
@@ -88,46 +108,45 @@ def send_over_sockets_select(robots, paths):
 
                 # append to received data
                 received_data[r].extend(data)
+
+    for s in sockets:
+        s.close()
         
-        for data in received_data:
-            print(data)
-
-def send_over_sockets_threads(robots, paths):
-     # get commands
-    commands = paths.command_strings
-    # get robot keys
-    robot_keys = list(commands.members.keys())                  
-
-    # create a list of tuples containing each robots ip address and port
-    server_addresses = [(robots.members[key].ip_address, robots[key].port) for key in robot_keys]
-
-    data_queue = queue.Queue() # to collect the decoded data from handle_server
-
-    NUM_COMMANDS = 2
-
-    for c in range(NUM_COMMANDS):
-        threads = []
-        for address in server_addresses:
-            t = threading.Thread(target=handle_server, args=(address,))
-            t.start()
-            threads.append(t)
-        
-        for thread in threads:
-            thread.join()
-
-        while not data_queue.empty():
-            data = data_queue.get()
-            print(data)
-            print("Received:", data)
-
-
-def handle_server(server_address, data_queue):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(server_address)
+    for r, data in enumerate(received_data):
+        print(f"Data from {robot_keys[r]}: " + data)
     
+    return received_data
+
+
+def handle_server(robot, bytes_to_send, data_queue):
+    
+    server_address = (robot.ip_address, robot.port)
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    try:
+        s.connect(server_address)
+        s.sendall(bytes_to_send)
+    except (socket.error, ConnectionRefusedError) as e:
+        print(f"Error connecting to robot{robot.id}: {e}")
+        print("Try rebooting it and then press enter to continue")
+        # pause the program while the user reboots the robot
+        input(" ")
+
+        try:
+            # try to connect again
+            s.connect(server_address)
+            s.sendall(bytes_to_send)
+        except (socket.error, ConnectionRefusedError) as e:
+            print(f"Reconnection to robot{robot.id} failed: {e}")
+            print("Aborting")
+            data_queue.put(f'Connection with robot{robot.id} failed')
+
+            return 
+   
     received_data = []
     while True:
-        data = sock.recv(1024)  # Receive data from server
+        data = s.recv(BUFFER_SIZE)  # Receive data from server
 
         # check if data is empty
         if not data:
@@ -140,41 +159,63 @@ def handle_server(server_address, data_queue):
         data = [x for x in data if x != '']
         received_data.extend(data)
     
-    data_queue.put(received_data)
+
+    data_with_identifier = {'robot_id': robot.id, 
+                            'data': received_data}
+
+    data_queue.put(data_with_identifier)
+
+    return
 
 
-
-
-def parse_durations(robots, paths):
-    durations = paths.durations
-    durations_common = []
-
-    # get the length of each entries in the durations dictionary
-    # this is the number of commands to send to each robot
-    num_commands = [len(durations[key]) for key in robot_keys]
-    # code is only currently set to deal with 2 robots at a time
-    if len(num_commands) != 2:
-        raise ValueError('Code is only currently set to deal with 2 robots at a time')
-    if num_commands[0] != num_commands[1]:
-        raise ValueError('Number of commands to send to each robot must be equal')
-    num_commands = num_commands[0]
-
+def send_over_sockets_threads(robots, paths):
+     # get commands
+    commands = paths.command_strings
     # get robot keys
-    robot_keys = list(commands.members.keys())
-    # keep max durations for each step
-    for i in len(robot_keys):
-        if i == 0:
-            durations_common = durations[robot_keys[i]]
-        else:
-            for j in range(len(durations_common)):
-                if durations_common[j] < durations[robot_keys[i]][j]:
-                    durations_common[j] = durations[robot_keys[i]][j]   
+    robot_keys = list(commands.members.keys())                  
 
+    data_queue = queue.Queue() # to collect the decoded data from handle_server
+
+    NUM_COMMANDS = 2
+
+    for c in range(NUM_COMMANDS):
+        threads = []
+        for key in robot_keys:
+            t = threading.Thread(target=handle_server, 
+                                 args=(robots.members[key], 
+                                commands[key][c], data_queue))
+            
+            t.start()
+            threads.append(t)
+        
+        for thread in threads:
+            thread.join()
+
+        while not data_queue.empty():
+            data = data_queue.get()
+            print(data)
+            print("Received:", data)
+
+    return 
 
 
 if __name__ == '__main__':
-    HOST = "192.168.0.102"  # The server's hostname or IP address (i.e. the pi pico w)
-    PORT = 65535  # The port used by the server
+    import robot_class
+    import create_path as cp
+    import choices_class as cc
 
-    string_input = '1, 1, 1, 2, 1, 1'
-    send_over_socket(string_input, HOST, PORT)
+    robot1 = robot_class.Robot(1, '192.100.0.101', 1025, 72, 0, 'moving', map)
+    robot2 = robot_class.Robot(2, '192.100.0.102', 1026, 81, 0, 'stationary', map)
+    robot3 = robot_class.Robot(3, '192.100.0.103', 1027, 91, 0, 'moving', map)
+
+    robots = robot_class.Robots()
+    robots.add_robots([robot1, robot2, robot3])
+
+    choices = cc.Choices()
+    
+    next_platforms = cp.get_next_positions(robots, map, choices,
+                                            difficulty = 'hard')
+    
+    paths = cp.Paths(robots, next_platforms, map)
+
+    send_over_sockets_threads(robots, paths)

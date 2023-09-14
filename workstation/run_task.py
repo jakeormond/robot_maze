@@ -81,14 +81,14 @@ while True:
     # pick next platforms
     next_platforms = cp.get_next_positions(robots, map, trial_data, difficulty)
 
-    # contstruct paths 
+    # construct paths as well as commands and durations
     paths = Paths(robots, next_platforms, map)
 
     # display figure of paths
     paths.plot_paths()
 
-    # construct the robot commands
-    robotInput, robotsFinal = cp.paths_to_commands(robots, paths, map)
+    # send commands to robots
+    
 
 
 

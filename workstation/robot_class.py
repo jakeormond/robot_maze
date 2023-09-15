@@ -31,8 +31,8 @@ class Robot:
 
     @classmethod
     def from_yaml(cls, robot_id, yaml_data):
-        ip_address = yaml_data['ip_address']
-        port_number = yaml_data['port']
+        ip_address = yaml_data[f"robot{robot_id}"]['ip_address']
+        port_number = yaml_data[f"robot{robot_id}"]['port']
         position = None
         orientation = None
         state = 'stationary'
@@ -40,7 +40,6 @@ class Robot:
 
     def set_new_position(self, new_position):
         self.position = new_position
-        self.map_ind = self.get_map_ind(new_position)
     
     def set_new_orientation(self, new_orientation):
         self.orientation = new_orientation
@@ -52,12 +51,32 @@ class Robot:
         )
 
 class Robots:
-    def __init__(self):
+    def __init__(self, *args):
         self.members = {}
 
-    # def add_robot(self, robot_ind, robot_init):
-    #    self.items[f'robot{robot_ind+1}'] = Robot.from_yaml(robot_ind+1, 
-    #                                robot_init[f'robot{robot_ind+1}']) 
+        for robot in args:
+            self.add_robot(robot)
+
+    @classmethod
+    def from_yaml(cls, yaml_dir):
+        robots = Robots()        
+        robot_dict = read_yaml(yaml_dir)
+        # loop through the dictionary
+        robot_ids = []
+        for key, value in robot_dict.items():
+            robot_id = value['robot_id']
+            robot = Robot.from_yaml(robot_id, robot_dict)
+            robots.add_robot(robot)
+
+            robot_ids.append(robot_id)
+        
+        for id in robot_ids:
+            robots.members[f'robot{id}'].\
+                set_new_position(input(f'Robot {id} - Enter new position: '))
+            robots.members[f'robot{id}'].\
+                set_new_orientation(input(f'Robot {id} - Enter new orientation (0, 60, 120, 180, 240, 300): '))
+
+        return robots       
 
     def add_robot(self, robot):
         self.members[f'robot{robot.id}'] = robot   

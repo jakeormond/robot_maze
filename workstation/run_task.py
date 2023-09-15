@@ -7,7 +7,7 @@ from robot_class import Robot
 import create_path as cp
 from create_path import Paths
 from choices_class import Choices
-from robot_class import get_robot_positions, initialize_robots_as_dict
+from robot_class import Robots
 from cropping import get_crop_nums
 import platform_map as mp
 import send_over_socket as sos
@@ -18,20 +18,11 @@ import csv
 
 # create robot instances in a dictionary
 yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
-robots = initialize_robots_as_dict(yaml_dir, positions=None, orientations=None)
+robots = Robots.from_yaml(yaml_dir)
 
 # load map and set goal position
 map = mp.Map(directory=yaml_dir)
 map.set_goal_position(input('Enter goal position: '))
-
-# set robot intial positions. Typically, robo1 is the stationary robot. It starts 
-# with orientation 180, and the other robots start with orientation 0. 
-for r in range(3):
-    robots[f'robot{r+1}'].set_new_position(input(f'Set robot{r+1} new position: '))
-    if r+1 == 1:
-        robots[f'robot{r+1}'].set_new_orientation(180)
-    else:
-        robots[f'robot{r+1}'].set_new_orientation(0)
 
 # initialize data storage
 trial_data = Choices()
@@ -52,7 +43,7 @@ with open(filename, 'w', newline='') as csvfile:
 
 # get initial cropping parameters
 # first, get the robot positions
-robot_positions = get_robot_positions(robots)
+robot_positions = robots.get_positions()
 plat_coor_dir = data_dir
 plat_coor = get_plat_coor(robot_positions, plat_coor_dir) # need to write this code still
 crop_nums = get_crop_nums(robot_positions, plat_coor)
@@ -88,8 +79,17 @@ while True:
     # display figure of paths
     paths.plot_paths()
 
-    # send commands to robots
-    received_data = sos.send_over_sockets_select(robots, paths)
+    # send commands to robots. This can return 
+    # data from the robots, but probably not necessary
+    # THIS SHOULD INCLUDE ONLY THE FIRST TURNS
+    sos.send_over_sockets_select(robots, paths) 
+
+    # SO WE CAN MAKE SURE THE ANIMAL DIDN'T MOVE
+    # monitor the tracking data coming from Bonsai to determine
+    # when the animal's made its decision. 
+
+
+
     
 
 
@@ -99,7 +99,8 @@ while True:
 
 
 
-
+# save the choice history to file
+trial_data.save_choices(data_dir)
 
 
 

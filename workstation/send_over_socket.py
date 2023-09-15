@@ -204,18 +204,23 @@ if __name__ == '__main__':
     import create_path as cp
     import choices_class as cc
 
-    robot1 = robot_class.Robot(1, '192.100.0.101', 1025, 72, 0, 'moving', map)
-    robot2 = robot_class.Robot(2, '192.100.0.102', 1026, 81, 0, 'stationary', map)
-    robot3 = robot_class.Robot(3, '192.100.0.103', 1027, 91, 0, 'moving', map)
+    robot1 = robot_class.Robot(1, '192.100.0.102', 65535, 72, 0, 'moving', map)
+    robot2 = robot_class.Robot(2, '192.100.0.103', 65534, 81, 0, 'stationary', map)
+    robot3 = robot_class.Robot(3, '192.100.0.104', 65533, 91, 0, 'moving', map)
 
     robots = robot_class.Robots()
     robots.add_robots([robot1, robot2, robot3])
 
     choices = cc.Choices()
     
-    next_platforms = cp.get_next_positions(robots, map, choices,
-                                            difficulty = 'hard')
-    
-    paths = cp.Paths(robots, next_platforms, map)
 
-    send_over_sockets_threads(robots, paths)
+    # map = cp.Map()
+    # next_platforms = cp.get_next_positions(robots, map, choices,
+    #                                      difficulty = 'hard')
+    
+    # paths = cp.Paths(robots, next_platforms, map)
+
+    # send_over_sockets_threads(robots, paths)
+
+
+    send_over_socket('99, 1, 1', "192.168.0.104", 65533)

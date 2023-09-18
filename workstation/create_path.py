@@ -15,14 +15,16 @@ import matplotlib.patches as patches
 # CreatePath should take a start and end position, and optionally a 
 # list of positions to avoid
 class Paths:
-    def __init__(self, robots, next_plats, map, \
-                 time_per_turn = 0.5, time_per_line = 1.):
-       
+    def __init__(self, robots, map, difficulty = 'hard', \
+                 choices = None, time_per_turn = 0.5, time_per_line = 1.):
+        # pick nex positions
+        self.next_plats = get_next_positions(robots, map, choices, difficulty)
+
         # get all possible paths
-        self.all_paths = get_all_paths(robots, next_plats, map)
+        self.all_paths = get_all_paths(robots, self.next_plats, map)
 
         # select the optimal paths
-        self.optimal_paths = select_optimal_paths(self.all_paths, robots, next_plats, map)
+        self.optimal_paths = select_optimal_paths(self.all_paths, robots, self.next_plats, map)
 
         # get commands and timings
         
@@ -34,8 +36,8 @@ class Paths:
             paths_to_commands(robots, self.optimal_paths, map, \
                               self.time_per_turn, self.time_per_line)        
 
-    def plot_paths(self):
-        fig_handle = plot_paths(self.map, self.robots, self.optimal_paths)
+    def plot_paths(self, robots, map):
+        fig_handle = plot_paths(map, robots, self.optimal_paths)
         self.fig_handle = fig_handle
 
     def close_paths_plot(self):
@@ -175,26 +177,28 @@ def get_next_positions(robots, map, choices, difficulty):
     
     # find what, if any, choices have previously been made from stat_robot_pos using 
     # the choices.data pandas dataframe
-    choices.data = choices.data[choices.data['start_pos'] == stat_robot_pos]
-    # extract the chosen and unchosen positions to a numpy array and remove 
-    # any repeated pairs
-    n_prev_pairs = 0
-    if choices.data.empty == False:
-        previous_pairs = choices.data[['chosen_pos', 'unchosen_pos']].to_numpy()
-        previous_pairs = previous_pairs.astype(int)
-        for p in range(previous_pairs.shape[0]):
-            previous_pairs[p] = np.sort(previous_pairs[p])
-        # remove duplicate pairs
-        previous_pairs = np.unique(previous_pairs, axis=0)
-        n_prev_pairs = previous_pairs.shape[0]
+    if choices != None:
 
-        if n_prev_pairs != n_possible_pairs: # remove common pairs
-            for p in previous_pairs:
-                if p in possible_pairs:
-                    # find row index of p in possible pairs
-                    row_ind = np.where(np.all(possible_pairs == p, axis=1))[0][0]
-                    # delete row from possible_pairs
-                    possible_pairs = np.delete(possible_pairs, row_ind, axis=0)
+        choices.data = choices.data[choices.data['start_pos'] == stat_robot_pos]
+        # extract the chosen and unchosen positions to a numpy array and remove 
+        # any repeated pairs
+        n_prev_pairs = 0
+        if choices.data.empty == False:
+            previous_pairs = choices.data[['chosen_pos', 'unchosen_pos']].to_numpy()
+            previous_pairs = previous_pairs.astype(int)
+            for p in range(previous_pairs.shape[0]):
+                previous_pairs[p] = np.sort(previous_pairs[p])
+            # remove duplicate pairs
+            previous_pairs = np.unique(previous_pairs, axis=0)
+            n_prev_pairs = previous_pairs.shape[0]
+
+            if n_prev_pairs != n_possible_pairs: # remove common pairs
+                for p in previous_pairs:
+                    if p in possible_pairs:
+                        # find row index of p in possible pairs
+                        row_ind = np.where(np.all(possible_pairs == p, axis=1))[0][0]
+                        # delete row from possible_pairs
+                        possible_pairs = np.delete(possible_pairs, row_ind, axis=0)
     
     # randomly reorder possible_pairs
     np.random.shuffle(possible_pairs)
@@ -203,7 +207,7 @@ def get_next_positions(robots, map, choices, difficulty):
     # criteria
     next_positions = None
     while_counter = 0
-    while next_positions == None:
+    while next_positions is None:
         for p in possible_pairs:
             # get cartesian distance from stat_robot_pos
             stat_dist = map.cartesian_distance(stat_robot_pos, map.goal_position)
@@ -431,7 +435,7 @@ def construct_paths(robots, next_plats, map):
 
     return optimal_paths
 
-def path_to_command(robot, path, map):
+def path_to_command(robot, path, map, time_per_turn, time_per_line):
     ''' converts path to the robot command. The command takes
       the form of a series of turns and linear movements: 
       e.g. the command [2,1,4,2] would tell the robot to turn clockwise by
@@ -480,7 +484,7 @@ def path_to_command(robot, path, map):
 
     command_string = int_to_string_command(command)
 
-    return command, duration, command_string
+    return command_string, duration, command
 
 def get_command_timing(command, time_per_turn = 0.5, time_per_line = 1.):
 
@@ -524,6 +528,7 @@ def int_to_string_command(command):
     string_command = [''] * n_lists
 
     for i in range(n_lists):
+        string_command[i] = '99, '
         for c in command[i]:
             string_command[i] += str(c) + ', '
         string_command[i] = string_command[i][:-2]
@@ -549,8 +554,8 @@ def paths_to_commands(robots, paths, map, time_per_turn = 0.5, time_per_line = 1
 
     # loop through each robot and convert its path to a series of commands
     for key, path in paths.items():
-        command, duration, command_string = path_to_command(moving_robots[key], path, map, time_per_turn, time_per_line) 
-        commands[key] = int_to_string_command(command)        
+        command_string, duration, command = path_to_command(moving_robots[key], path, map, time_per_turn, time_per_line) 
+        commands[key] = command       
         durations[key] = duration
         command_strings[key] = command_string
 
@@ -670,7 +675,7 @@ def draw_platform(map, pos, ax, color='r'):
 
     # overlay the platform number
     text_col = 'k' if color == 'w' else 'w'
-    ax.text(plat_pos[0], plat_pos[1], pos, ha='center', va='center', color=text_col)
+    ax.text(plat_pos[0], plat_pos[1], int(pos), ha='center', va='center', color=text_col)
 
     return hexagon
 

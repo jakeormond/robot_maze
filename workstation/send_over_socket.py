@@ -118,11 +118,13 @@ def send_over_sockets_select(robots, paths):
     return received_data
 
 
-def handle_server(robot, bytes_to_send, data_queue):
+def handle_server(robot, string_input, data_queue):
     
     server_address = (robot.ip_address, robot.port)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    bytes_to_send = bytes(string_input, 'utf8')
 
     try:
         s.connect(server_address)
@@ -172,7 +174,7 @@ def send_over_sockets_threads(robots, paths):
      # get commands
     commands = paths.command_strings
     # get robot keys
-    robot_keys = list(commands.members.keys())                  
+    robot_keys = list(commands.keys())                  
 
     data_queue = queue.Queue() # to collect the decoded data from handle_server
 
@@ -203,24 +205,30 @@ if __name__ == '__main__':
     import robot_class
     import create_path as cp
     import choices_class as cc
+    import platform_map as mp
 
-    robot1 = robot_class.Robot(1, '192.100.0.102', 65535, 72, 0, 'moving', map)
-    robot2 = robot_class.Robot(2, '192.100.0.103', 65534, 81, 0, 'stationary', map)
-    robot3 = robot_class.Robot(3, '192.100.0.104', 65533, 91, 0, 'moving', map)
+    robot1 = robot_class.Robot(1, '192.168.0.102', 65535, 82, 180, 'moving', map)
+    robot2 = robot_class.Robot(2, '192.168.0.103', 65534, 91, 0, 'stationary', map)
+    robot3 = robot_class.Robot(3, '192.168.0.104', 65533, 92, 0, 'moving', map)
 
     robots = robot_class.Robots()
     robots.add_robots([robot1, robot2, robot3])
-
-    choices = cc.Choices()
     
+    lab_dir = 'D:/testFolder/pico_robots/map'    
+    map = cp.Map(directory=lab_dir)
+    map.set_goal_position(119)
 
-    # map = cp.Map()
-    # next_platforms = cp.get_next_positions(robots, map, choices,
-    #                                      difficulty = 'hard')
+    # next_platforms = cp.get_next_positions(robots, map, difficulty = 'hard')
     
-    # paths = cp.Paths(robots, next_platforms, map)
+    paths = cp.Paths(robots, map)
+    paths.plot_paths(robots, map)
 
-    # send_over_sockets_threads(robots, paths)
+    send_over_sockets_threads(robots, paths)
 
 
-    send_over_socket('99, 1, 1', "192.168.0.104", 65533)
+    # send_over_socket('99, 3', "192.168.0.102", 65535)    
+    # send_over_socket('99, 3', "192.168.0.103", 65534)    
+    # send_over_socket('99, 3', "192.168.0.104", 65533)    
+    # send_over_socket('97', "192.168.0.104", 65533)
+    # data_queue = queue.Queue()
+    # handle_server(robot2, "99,3", data_queue)

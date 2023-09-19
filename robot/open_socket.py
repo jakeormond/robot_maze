@@ -55,15 +55,18 @@ def parse_data(data, conn):
     data = [int(s) for s in data.decode().split(',')]
     # print(data)
     
-    if data[0] == 96: # turn in place
-        # print(f"data is {data[1]}")
-        line_distances1, line_distances2 = dr.turn_in_place(data[1], conn)
+    if data[0] == 96: 
+        encoder_distance = dr.drive_forward_by_distance(data[1], conn)
+         
+        conn.sendall(str(encoder_distance))
         
-        print(line_distances1)
-        print(line_distances2)
+    elif data[0] == 95: # simply get ir sensor values 
+        found_flag = dr.find_line(data[1], conn)
+       
+        conn.sendall(str(found_flag) + ',')
         
-        conn.sendall(str(line_distances1))
-        conn.sendall(str(line_distances2))
+    elif data[0] == 94: # simply get ir sensor values 
+        dr.turn_by_distance(data[1], data[2], conn)
                 
     elif data[0] == 97: # simply get ir sensor values 
         sensor_value1, sensor_value2 = dr.read_sensors()
@@ -87,7 +90,8 @@ def parse_data(data, conn):
     
     elif data[0] == 99:  # run honeycomb program
         for i, d in enumerate(data[1:]):
-            if i%2 == 0:
+            sleep(1)
+            if i%2 == 0:                
                 line_distances1, line_distances2 = \
                     dr.turn_in_place(d, conn)
                 

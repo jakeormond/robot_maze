@@ -90,10 +90,12 @@ def parse_data(data, conn):
     
     elif data[0] == 99:  # run honeycomb program
         for i, d in enumerate(data[1:]):
-            sleep(1)
+            if d == 0:
+                continue
+            
             if i%2 == 0:                
                 line_distances1, line_distances2 = \
-                    dr.turn_in_place(d, conn)
+                    dr.turn_in_place(d, conn=conn)
                 
                 conn.sendall(str(line_distances1))
                 conn.sendall(str(line_distances2))

@@ -1,3 +1,28 @@
+def calculate_distance_turn(enc1_a, enc2_a, direction):
+    # read encoders, and calculate distance turned since last line
+    enc1_b, enc2_b = read_encoders(ADDRESS, ENCODERONE)
+   
+    if direction == 1:
+        encoder_distance1 = enc1_b - enc1_a
+        if enc2_b == 0:
+            encoder_distance2 = 0
+        elif enc2_a > enc2_b:
+            encoder_distance2 = enc2_a - enc2_b
+        else:
+            encoder_distance2 = 2**32 - enc2_b + enc2_a
+        
+    else:
+        if enc1_b == 0:
+            encoder_distance1 = 0
+        elif enc1_a > enc1_b:
+            encoder_distance1 = enc1_a - enc1_b
+        else:
+            encoder_distance1 = 2**32 - enc1_b + enc1_a
+        encoder_distance2 = enc2_b - enc2_a
+    
+    return encoder_distance1, encoder_distance2
+
+
 def turn_in_place_V1(n_lines, conn): # direction == 1 for clockwise, -1 for counterclockwise
     miss_flag = False
     

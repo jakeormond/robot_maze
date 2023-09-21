@@ -167,10 +167,10 @@ def drive_straight_for_time(speed1, speed2, time_limit): # for testing
 
 def drive_straight(online_flag, speed1, speed2): # drive straight along line, adjusting speed as necessary to stay on line          
     if online_flag == 1:
-        speed1 = round(speed1*0.5)
+        speed1 = round(speed1*0.6)
         
     elif online_flag == 2:
-        speed2 = round(speed2*0.5)
+        speed2 = round(speed2*0.6)
         
     else:
         speed1 = max(speed1, speed2)
@@ -303,9 +303,10 @@ def linear_drive(n_lines, conn=None):
     # check if over the line, and straighten out if necessary
     online_flag = check_online() # 0 not on line, 1 left sensor on line, 2 right sensor on line, 3 both sensors on line
     if online_flag == 0:
-        # NEED TO FIND LINE HERE
-        # DRIVE FORWARD A BIT TO FIND IT
-        return [-1], [-1], [-1], [-1]
+        send_msg_over_socket('trying to find line', conn) 
+        drive_forward_by_distance(40, conn)
+        find_line_back_and_forth(conn)        
+    
     elif online_flag != 3: # straighten out if both sensors not on line. 
         find_line_half_on(conn)
         online_flag = check_online()
@@ -366,6 +367,7 @@ def linear_drive(n_lines, conn=None):
             speed2 += .3
         
         # check if online and update if necessary
+        last_online_flag = online_flag
         online_flag = check_online()        
         if online_flag != 0 and not online and max(distance1, distance2) > 80:
             lines_traversed += 1
@@ -382,7 +384,7 @@ def linear_drive(n_lines, conn=None):
                 drive_basic(0, 0)
                 break
             
-        elif online_flag == 0 and online:
+        elif online_flag == 0 and online and max(distance1, distance2) >= 150:
             online = False
             line_distances1.append(distance1)
             line_distances2.append(distance2)
@@ -390,6 +392,10 @@ def linear_drive(n_lines, conn=None):
             enc1, enc2 = reset_encoders()            
             
             send_msg_over_socket('off the line', conn)
+            
+        elif online_flag == 0 and online and max(distance1, distance2) < 150:
+            online_flag = last_online_flag          
+            send_msg_over_socket('off the line before gap - trying to find', conn)
         
     return line_distances1, line_distances2, gap_distances1, gap_distances2
    

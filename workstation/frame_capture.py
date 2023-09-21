@@ -15,6 +15,10 @@ def capture_frame(filename, directory):
         print("Error: Could not open camera.")
         exit()
 
+    # set resolution
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 2448)  # Width
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 2048)  # Height
+
     # Capture a frame
     ret, frame = cap.read()
 
@@ -37,5 +41,6 @@ def capture_frame(filename, directory):
 
 if __name__ == '__main__':
     filename = "captured_frame.jpg"
-    directory = "/media/jake/LaCie/robot_maze_workspace"
+    # directory = "/media/jake/LaCie/robot_maze_workspace"
+    directory = 'D:/testFolder/pico_robots/platform_images'
     capture_frame(filename, directory)

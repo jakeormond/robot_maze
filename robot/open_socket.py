@@ -6,9 +6,7 @@ from time import sleep
 # import irAndMotorsV3
 import drive_robot as dr
 
-PORT = 65535
-
-def open_socket_connection():
+def open_socket_connection(PORT):
     # Open network socket.
     s = socket.socket()
 

@@ -6,25 +6,34 @@ the shortest path, a path that avoids other robots or obstacles, etc.
 '''
 import numpy as np
 import copy
+import os
 import platform_map as pm
 from platform_map import Map
 import platform_map as mp  
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import time
+
 
 # CreatePath should take a start and end position, and optionally a 
 # list of positions to avoid
 class Paths:
-    def __init__(self, robots, map, difficulty = 'hard', \
+    def __init__(self, robots, map, next_positions=None, difficulty = 'hard', \
                  choices = None, time_per_turn = 0.5, time_per_line = 1.):
-        # pick nex positions
-        self.next_plats = get_next_positions(robots, map, choices, difficulty)
+        
+        if next_positions is None:       
+            # pick nex positions
+            self.next_plats = get_next_positions(robots, map, choices, difficulty)
 
-        # get all possible paths
-        self.all_paths = get_all_paths(robots, self.next_plats, map)
+            # get all possible paths
+            self.all_paths = get_all_paths(robots, self.next_plats, map)
 
-        # select the optimal paths
-        self.optimal_paths = select_optimal_paths(self.all_paths, robots, self.next_plats, map)
+            # select the optimal paths
+            self.optimal_paths = select_optimal_paths(self.all_paths, robots, self.next_plats, map)
+
+        else: # moving robots directly to next positions
+            self.next_plats = next_positions
+            self.optimal_paths = get_direct_paths(robots, next_positions, map)
 
         # get commands and timings
         
@@ -32,9 +41,9 @@ class Paths:
 
         self.time_per_line = time_per_line
         
-        self.command_strings, self.durations, self.command_numeric  = \
-            paths_to_commands(robots, self.optimal_paths, map, \
-                              self.time_per_turn, self.time_per_line)        
+        self.command_strings, self.durations, self.command_numeric, \
+             self.final_orientations = paths_to_commands(robots, \
+                    self.optimal_paths, map, self.time_per_turn, self.time_per_line)        
 
     def plot_paths(self, robots, map):
         fig_handle = plot_paths(map, robots, self.optimal_paths)
@@ -76,15 +85,14 @@ def get_starting_positions(robots, map):
     
     # separate stationary robot from moving robots
     stat_robot = robots.get_stat_robot()        
-    moving_robots = robots.get_moving_robots()
-    
+    moving_robots = robots.get_moving_robots()    
     
     # now, identify position of stay put robot if shape == boomerang
     stay_put_robot = None
     initial_positions = {}
     if shape == 'boomerang':
             # get distance from each moving robot to the stat robot
-            for key, r in moving_robots.items():
+            for key, r in moving_robots.members.items():
                 pos_dist = map.find_shortest_distance(stat_robot.position,
                                                        r.position)
                 if pos_dist == 2:
@@ -237,7 +245,20 @@ def get_next_positions(robots, map, choices, difficulty):
                         break
     
     return next_positions
-         
+
+def get_direct_paths(robots, next_plats, map):
+    # get moving robots
+    moving_robots = robots.get_moving_robots()
+    # verify that there are the same number of moving robots and next_plats
+    if len(moving_robots.members) != len(next_plats):
+        raise ValueError('Number of moving robots must equal number of next_plats')
+
+    paths = {}
+    for i, key in enumerate(moving_robots.members):
+        paths[key] = map.straight_path(moving_robots.members[key].position, next_plats[i])
+
+    return paths
+
 def get_all_paths(robots, next_plats, map):
     ''' determines the paths the moving robot can take to reach
     the required position adjacent to the stationary robot'''
@@ -476,15 +497,23 @@ def path_to_command(robot, path, map, time_per_turn, time_per_line):
     
     # append final linear_counter to command
     command.append(linear_counter)    
-    command = [command[:-1], [0, command[-1]]] 
+    subcommands = [None, None, None]
+    subcommands[0] = [command[0]]
+    subcommands[1] = command[1:-1]
+    subcommands[1].insert(0,0)
+    subcommands[2] = [0, command[-1]]
+
     # cast command to int
-    command = [[int(c) for c in command[0]], [int(c) for c in command[1]]]
+    for i in range(len(subcommands)):
+        subcommands[i] = [int(c) for c in subcommands[i]]
 
-    duration = get_command_timing(command, time_per_turn = 0.5, time_per_line = 1.)
+    duration = get_command_timing(subcommands, time_per_turn = 0.5, time_per_line = 1.)
 
-    command_string = int_to_string_command(command)
+    command_string = int_to_string_command(subcommands)
 
-    return command_string, duration, command
+    final_orientation = direction
+
+    return command_string, duration, subcommands, final_orientation
 
 def get_command_timing(command, time_per_turn = 0.5, time_per_line = 1.):
 
@@ -501,7 +530,7 @@ def get_command_timing(command, time_per_turn = 0.5, time_per_line = 1.):
 
     for i in range(n_lists):
         for i2, c in enumerate(command[i]):
-            if i2 == 0 and c == 0 and command[i][i2+1] == 0:
+            if i2 == 0 and c == 0 and (len(command[i]) == 1 or command[i][i2+1] == 0):
                 duration[i] += 1
             
             if i2%2 == 0:
@@ -538,6 +567,7 @@ def int_to_string_command(command):
 
     return string_command
 
+
 def paths_to_commands(robots, paths, map, time_per_turn = 0.5, time_per_line = 1.):
     ''' converts the paths in paths to commands that can be sent to the robots.
      The commands take the form of a series of turns and linear movements: 
@@ -551,17 +581,17 @@ def paths_to_commands(robots, paths, map, time_per_turn = 0.5, time_per_line = 1
     commands = {}
     durations = {}
     command_strings = {}
+    final_orientations = {}
 
     # loop through each robot and convert its path to a series of commands
     for key, path in paths.items():
-        command_string, duration, command = path_to_command(moving_robots[key], path, map, time_per_turn, time_per_line) 
+        command_string, duration, command, orientation = path_to_command(moving_robots.members[key], path, map, time_per_turn, time_per_line) 
         commands[key] = command       
         durations[key] = duration
         command_strings[key] = command_string
-
-    return command_strings, durations, commands
-
-
+        final_orientations[key] = orientation
+    
+    return command_strings, durations, commands, final_orientations
 
 
 def plot_paths(map, robots, optimal_paths):
@@ -572,6 +602,7 @@ def plot_paths(map, robots, optimal_paths):
     platforms = [[], []]
 
     # create figure with 2 subplots arranged horizontally
+    # Figure should open on screen 1 at top level    
     fig, ax = plt.subplots(1, 2, figsize=(20,10))
 
     # get stationary robot position 
@@ -651,7 +682,11 @@ def plot_paths(map, robots, optimal_paths):
         for t in a.texts:
             t.set_clip_on(True)
 
+    # os.environ['DISPLAY'] = ':0.1'
+    fig.canvas.manager.window.wm_geometry("800x600+0+0")
+    fig.canvas.manager.window.wm_attributes('-topmost', 1)
     plt.show(block=False)
+
 
     # return the figure handle
     return fig
@@ -683,7 +718,8 @@ def draw_platform(map, pos, ax, color='r'):
 
 if __name__ == '__main__':
     import platform_map
-    directory = '/media/jake/LaCie/robot_maze_workspace'
+    # directory = '/media/jake/LaCie/robot_maze_workspace'
+    directory = 'D:/testFolder/pico_robots/map'
     # directory = 'C:/Users/Jake/Desktop/map_of_platforms'
     # map = platform_map.open_map(map='restricted_map', directory=directory)
     map = Map(directory=directory)
@@ -704,6 +740,6 @@ if __name__ == '__main__':
 
     fig = plot_paths(map, robots, optimal_paths)
     
-    commands, durations = paths_to_commands(robots, optimal_paths, map)
+    commands, durations, _ = paths_to_commands(robots, optimal_paths, map)
     
     plt.show()

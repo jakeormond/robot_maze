@@ -178,7 +178,7 @@ def send_over_sockets_threads(robots, paths):
 
     data_queue = queue.Queue() # to collect the decoded data from handle_server
 
-    NUM_COMMANDS = 2
+    NUM_COMMANDS = 3
 
     for c in range(NUM_COMMANDS):
         threads = []

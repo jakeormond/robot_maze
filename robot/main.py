@@ -36,5 +36,5 @@ try:
 except KeyboardInterrupt:
     machine.reset()
 
-open_socket.open_socket_connection()
+open_socket.open_socket_connection(PORT)
     

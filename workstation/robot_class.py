@@ -26,7 +26,7 @@ class Robot:
         self.ip_address = ip_address
         self.port = port_number        
         self.position = position
-        self.orientation = orientation
+        self.orientation = orientation # 0, 60, 120, 180, 240, 300
         self.state = state # stationary or moving
 
     @classmethod
@@ -58,7 +58,7 @@ class Robots:
             self.add_robot(robot)
 
     @classmethod
-    def from_yaml(cls, yaml_dir):
+    def from_yaml(cls, yaml_dir, positions=None, orientations=None):
         robots = Robots()        
         robot_dict = read_yaml(yaml_dir)
         # loop through the dictionary
@@ -70,11 +70,20 @@ class Robots:
 
             robot_ids.append(robot_id)
         
-        for id in robot_ids:
-            robots.members[f'robot{id}'].\
-                set_new_position(input(f'Robot {id} - Enter new position: '))
-            robots.members[f'robot{id}'].\
-                set_new_orientation(input(f'Robot {id} - Enter new orientation (0, 60, 120, 180, 240, 300): '))
+        for i, id in enumerate(robot_ids):
+            if positions is None:
+                robots.members[f'robot{id}'].\
+                        set_new_position(int(input(f'Robot {id} - Enter new position: ')))
+            else:
+                robots.members[f'robot{id}'].\
+                        set_new_position(positions[i])
+            
+            if orientations is None:       
+                robots.members[f'robot{id}'].\
+                        set_new_orientation(int(input(f'Robot {id} - Enter new orientation (0, 60, 120, 180, 240, 300): ')))
+            else:
+                robots.members[f'robot{id}'].\
+                        set_new_orientation(orientations[i])
 
         return robots       
 
@@ -96,13 +105,12 @@ class Robots:
             if self.members[r].state == 'stationary':
                 return self.members[r]
             
-    def get_moving_robots(self):
-        robots_dict = copy.deepcopy(self.members)
-        for r in robots_dict:
-            if robots_dict[r].state == 'stationary':
-                # remove stationary robot from dictionary
-                robots_dict.pop(r)
-                return robots_dict
+    def get_moving_robots(self): # this returns a dictionary in some early code, so may need to fix
+        moving_robots = copy.deepcopy(self)
+        for r in self.members:
+            if self.members[r].state == 'stationary':
+                moving_robots.members.pop(r)
+        return moving_robots
     
     def get_robot(self, robot_id):
         return self.members[f'robot{robot_id}']
@@ -111,7 +119,7 @@ class Robots:
         return list[self.members.keys()]
 
     
-
+# DON@T THINK WE NEED THIS FUNCTION, DELETE IT
 def initialize_robots_as_dict(yaml_dir=None, positions=None, orientations=None):
     
     # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
@@ -145,5 +153,5 @@ def get_robot_positions(robots):
     # get the positions of the robots from the dict of robot objects.
     robot_positions = []
     for r in range(3):
-        robot_positions.append(robots[f'robot{r+1}'].position)
+        robot_positions.append(robots.members[f'robot{r+1}'].position)
     return robot_positions

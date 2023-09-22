@@ -58,17 +58,24 @@ class Robots:
             self.add_robot(robot)
 
     @classmethod
-    def from_yaml(cls, yaml_dir, positions=None, orientations=None):
+    def from_yaml(cls, yaml_dir, positions=None, orientations=None, robot_ids=None):
         robots = Robots()        
         robot_dict = read_yaml(yaml_dir)
         # loop through the dictionary
-        robot_ids = []
-        for key, value in robot_dict.items():
-            robot_id = value['robot_id']
-            robot = Robot.from_yaml(robot_id, robot_dict)
-            robots.add_robot(robot)
+        if robot_ids is None:
+            robot_ids = []
+            for key, value in robot_dict.items():
+                robot_id = value['robot_id']
+                robot = Robot.from_yaml(robot_id, robot_dict)
+                robots.add_robot(robot)
 
-            robot_ids.append(robot_id)
+                robot_ids.append(robot_id)
+
+        else:
+            for robot_id in robot_ids:
+                robot = Robot.from_yaml(robot_id, robot_dict)
+                robots.add_robot(robot)
+    
         
         for i, id in enumerate(robot_ids):
             if positions is None:
@@ -99,6 +106,12 @@ class Robots:
         for r in self.members:
             positions.append(self.members[r].position)
         return positions
+    
+    def get_orientations(self):
+        orientations = []
+        for r in self.members:
+            orientations.append(self.members[r].orientation)
+        return orientations
 
     def get_stat_robot(self):
         for r in self.members:

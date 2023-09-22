@@ -169,6 +169,27 @@ def handle_server(robot, string_input, data_queue):
 
     return
 
+def send_over_sockets_serial(robots, paths, ordered_keys):
+    # get commands
+    commands = paths.command_strings
+    # get robot keys
+    robot_keys = list(commands.keys())                  
+
+    data_queue = queue.Queue() # to collect the decoded data from handle_server
+
+    NUM_COMMANDS = 3
+
+    for c in range(NUM_COMMANDS):
+        for key in ordered_keys:
+            handle_server(robots.members[key], 
+                          commands[key][c], data_queue)
+        
+        while not data_queue.empty():
+            data = data_queue.get()
+            print(data)
+            print("Received:", data)
+
+    return 
 
 def send_over_sockets_threads(robots, paths):
      # get commands

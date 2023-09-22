@@ -15,7 +15,8 @@ from robot_class import Robot, Robots
 from platform_map import Map
 from frame_capture import capture_frame
 from create_path import Paths
-from send_over_socket import send_over_sockets_threads
+# from send_over_socket import send_over_sockets_threads
+from send_over_socket import send_over_sockets_serial
 from tkinter import filedialog
 from time import sleep
 
@@ -36,7 +37,7 @@ def get_next_positions(platform_map, prev_positions, lr_direction):
         if lr_direction == 'right' and col == n_cols-1 or \
             lr_direction == 'left' and col == 0:
             
-            return None, None
+            return None, None, None
     
     # if robot on last column, move to the next set of rows and change direction.
     # Note that if robots are moving to the final set of rows, 
@@ -55,7 +56,9 @@ def get_next_positions(platform_map, prev_positions, lr_direction):
         else:
             lr_direction = 'right'
 
-        return next_positions, lr_direction
+        order = 'reverse'
+
+        return next_positions, lr_direction, order
     
     # otherwise, move the robots left or right
     # Currently, we are assuming the top corners of the map are occupied by positions,
@@ -65,14 +68,22 @@ def get_next_positions(platform_map, prev_positions, lr_direction):
     if col % 2 == 0 and lr_direction == 'right':
         # next positions will be one col to the right, and one row down
         next_positions = platform_map[rows+1, col+1]
+        order = 'reverse'
+
     elif col % 2 == 0 and lr_direction == 'left':
         next_positions = platform_map[rows+1, col-1]
+        order = 'reverse'
+
     elif col % 2 == 1 and lr_direction == 'right':
         next_positions = platform_map[rows-1, col+1]
+        order = 'ascending'
+
     else:
         next_positions = platform_map[rows-1, col-1]
+        order = 'ascending'
+
     
-    return next_positions, lr_direction
+    return next_positions, lr_direction, order
 
 if __name__ == '__main__':
     # load the platform map
@@ -80,7 +91,7 @@ if __name__ == '__main__':
     # platform_map = open_map('platform_map', directory)
     map = Map(directory=directory)
     # start_platform = 41
-    stop_platform = 217
+    stop_platform = 212
     # extra_row = 1
 
     # find rows and columns to exclude (robot can't drive there because of curtains)
@@ -92,26 +103,34 @@ if __name__ == '__main__':
     n_rows = map.restricted_map.shape[0]
     n_cols = map.restricted_map.shape[1]
 
-    n_robots = 3 # THIS WILL NEEED TO BE USER SET
-    # create a list of strings of the robot names (i.e. robot1, robot2, ...)
-    robot_list = [f'robot{r+1}' for r in range(n_robots)]
-
-    lr_direction = 'right' # travel direction switches to 'left' when the robots reach the right side of the maze
+    # lr_direction = 'right' # travel direction switches to 'left' when the robots reach the right side of the maze
+    lr_direction = 'left' # travel direction switches to 'left' when the robots reach the right side of the maze
 
     # start_pos is a 3 element vector taken using current_rows and current_col as indices into platform_map
-    start_pos = map.restricted_map[[0, 2, 4], 0].astype(int)
+    # start_pos = map.restricted_map[[0, 2, 4], 0].astype(int)
+    # start_pos = np.array([160, 179, 198])
+    start_pos = np.array([213])
     print('start positions: ', start_pos)
-    orientations = np.array([0, 0, 0])
+    # orientations is a 3 element vector of repeating values
+    # orientations = np.array([30, 30, 30])
+    orientations = np.array([240])
     print('orientations: ', orientations)
 
     # create the robot instances
     # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
     yaml_dir = 'D:/testFolder/pico_robots/yaml'
     # robot_init = read_yaml(yaml_dir)
+    # robots = Robots.from_yaml(yaml_dir, positions=start_pos, \
+    #                          orientations=orientations)
+
     robots = Robots.from_yaml(yaml_dir, positions=start_pos, \
-                              orientations=orientations)
+                             orientations=orientations, robot_ids = [3])
+    robot_list = []
     for key in robots.members:
         robots.members[key].state = 'moving'
+        robot_list.append(key)
+    
+    n_robots = len(robot_list)
 
     # select directory for saving images
     # directory = filedialog.askdirectory()
@@ -121,13 +140,15 @@ if __name__ == '__main__':
     while True:
         # capture image
         positions = robots.get_positions()
-
-        filename = f'platforms_{positions[0]}_{positions[1]}_{positions[2]}.jpg'    
+        filename = f'platforms_' 
+        for p in positions:
+            filename += f'{p}_'
+        filename = filename[:-1] + '.jpg' 
         capture_frame(filename, directory)
         sleep(1)
 
         # choose next platform positions
-        next_positions, lr_direction = get_next_positions(map.restricted_map, 
+        next_positions, lr_direction, order = get_next_positions(map.restricted_map, 
                                                 positions, lr_direction)
         
         if next_positions is None: # we have reached the end of the maze
@@ -145,8 +166,13 @@ if __name__ == '__main__':
         # get the next paths
         paths = Paths(robots, map, next_positions=next_positions)
 
-        # drive the robots to the next positions
-        send_over_sockets_threads(robots, paths)
+        # send commands to robots
+        if order == 'ascending':
+            ordered_list = robot_list
+        else:
+            ordered_list = robot_list[::-1]
+            
+        send_over_sockets_serial(robots, paths, ordered_list)
                 
         # assign next positions and orientations to robots
         for r in range(n_robots):

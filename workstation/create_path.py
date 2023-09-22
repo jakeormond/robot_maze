@@ -96,9 +96,9 @@ def get_starting_positions(robots, map):
                 pos_dist = map.find_shortest_distance(stat_robot.position,
                                                        r.position)
                 if pos_dist == 2:
-                    stay_put_robot = moving_robots[key]
+                    stay_put_robot = moving_robots.members[key]
                     initial_positions[key] = np.array([stay_put_robot.position])
-                    del moving_robots[key]
+                    del moving_robots.members[key]
                     break
 
     # get initial positions based on exact configuration 

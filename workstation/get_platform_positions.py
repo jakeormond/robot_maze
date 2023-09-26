@@ -22,7 +22,7 @@ def get_platform_positions(image_path=None):
     import os
     image_names = [f for f in os.listdir(image_path) if f[-11:] == 'cropped.jpg']
 
-    platform_coordinates = {}
+    platform_coordinates_cropped = {}
 
     for i, image_name in enumerate(image_names):
 
@@ -126,28 +126,28 @@ def get_platform_positions(image_path=None):
 
         # save the circle coordinates
         for i, p in enumerate(platforms):
-            platform_coordinates[p] = [circles[i,0], circles[i,1], circles[i,2]]
+            platform_coordinates_cropped[p] = [circles[i,0], circles[i,1], circles[i,2]]
 
     # order the platform coordinates by platform number
-    platform_coordinates = dict(sorted(platform_coordinates.items()))
+    platform_coordinates_cropped = dict(sorted(platform_coordinates_cropped.items()))
 
     # save the platform coordinates to a file
-    # if platform_coordinates.pickle already exists, load it
-    if os.path.isfile(image_path + '/platform_coordinates.pickle'):
-        with open(image_path + '/platform_coordinates.pickle', 'rb') as handle:
+    # if platform_coordinates_cropped.pickle already exists, load it
+    if os.path.isfile(image_path + '/platform_coordinates_cropped.pickle'):
+        with open(image_path + '/platform_coordinates_cropped.pickle', 'rb') as handle:
             platform_coordinates_og = pickle.load(handle)
         # update the platform_coordinates dictionary with the new coordinates
-        platform_coordinates_og.update(platform_coordinates)
+        platform_coordinates_og.update(platform_coordinates_cropped)
         # save the updated dictionary
-        with open(image_path + '/platform_coordinates.pickle', 'wb') as handle:
+        with open(image_path + '/platform_coordinates_cropped.pickle', 'wb') as handle:
             pickle.dump(platform_coordinates_og, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     else:
-        # save crop_coordinates to a pickle file
-        with open(image_path + '/platform_coordinates.pickle', 'wb') as handle:
-            pickle.dump(platform_coordinates, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        # save platform_coordinates_cropped to a pickle file
+        with open(image_path + '/platform_coordinates_cropped.pickle', 'wb') as handle:
+            pickle.dump(platform_coordinates_cropped, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
-    return platform_coordinates
+    return platform_coordinates_cropped
 
 def draw_platforms_on_uncropped(directory=None):
     '''
@@ -155,11 +155,12 @@ def draw_platforms_on_uncropped(directory=None):
     checking that the platform positions were extracted correctly.
     '''
     if directory is None:
-        directory = '/home/jake/Documents/robot_maze_platform_images'
+        # directory = '/home/jake/Documents/robot_maze_platform_images'
+        directory = 'D:/testFolder/pico_robots/platform_images'
 
     # load the platform coordinates
-    with open(directory + '/platform_coordinates.pickle', 'rb') as handle:
-        platform_coordinates = pickle.load(handle)
+    with open(directory + '/platform_coordinates_cropped.pickle', 'rb') as handle:
+        platform_coordinates_cropped = pickle.load(handle)
 
     # load the crop coordinates
     with open(directory + '/crop_coordinates.pickle', 'rb') as handle:
@@ -170,6 +171,8 @@ def draw_platforms_on_uncropped(directory=None):
     image_names = [f for f in os.listdir(directory) if f[-4:] == '.jpg' 
                     and f[-11:] != 'cropped.jpg']
     
+    platform_coordinates = {}
+
     for i, image_name in enumerate(image_names):
 
         # load image
@@ -185,9 +188,13 @@ def draw_platforms_on_uncropped(directory=None):
         # loop through the platforms and draw them on the image
         for p in platforms:
             # get the platform coordinates
-            center = (platform_coordinates[p][0] + crop_coor[0], 
-                      platform_coordinates[p][1] + crop_coor[1])
-            radius = platform_coordinates[p][2]
+            center = (platform_coordinates_cropped[p][0] + crop_coor[0], 
+                      platform_coordinates_cropped[p][1] + crop_coor[1])
+            radius = platform_coordinates_cropped[p][2]
+
+            # store the corrected coordinates in platform_coordinates
+            platform_coordinates[p] = [center[0], center[1], radius]
+
             # Draw the circle on a copy of the original image
             cv2.circle(img, center, radius, (0, 255, 0), 2)
 
@@ -195,11 +202,18 @@ def draw_platforms_on_uncropped(directory=None):
         scaling_factor = 0.5
         resized_image = cv2.resize(img, None, fx=scaling_factor, fy=scaling_factor)
         cv2.namedWindow('Detected Circles', cv2.WINDOW_AUTOSIZE)
-        cv2.moveWindow('Detected Circles', 1500, 200)
+        # cv2.moveWindow('Detected Circles', 1500, 200)
+        cv2.moveWindow('Detected Circles', 200, 0)
         cv2.imshow('Detected Circles', resized_image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-    
+
+    # save corrected coordinates
+    # sort the platform coordinates by platform number
+    platform_coordinates = dict(sorted(platform_coordinates.items()))
+    with open(directory + '/platform_coordinates.pickle', 'wb') as handle:
+        pickle.dump(platform_coordinates, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 if __name__ == "__main__":
     # get_platform_positions()
     draw_platforms_on_uncropped()

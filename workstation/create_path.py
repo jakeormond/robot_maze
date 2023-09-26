@@ -7,6 +7,7 @@ the shortest path, a path that avoids other robots or obstacles, etc.
 import numpy as np
 import copy
 import os
+from robot_class import Robot, Robots 
 import platform_map as pm
 from platform_map import Map
 import platform_map as mp  
@@ -18,13 +19,18 @@ import time
 # CreatePath should take a start and end position, and optionally a 
 # list of positions to avoid
 class Paths:
-    def __init__(self, robots, map, next_positions=None, difficulty = 'hard', \
-                 choices = None, time_per_turn = 0.5, time_per_line = 1.):
+    def __init__(self, robots, map, next_positions=None, task='task', \
+                 difficulty = 'hard', choices = None, time_per_turn = 0.5, \
+                    time_per_line = 1.):
         
-        if next_positions is None:       
-            # pick nex positions
-            self.next_plats = get_next_positions(robots, map, choices, difficulty)
+        if task == 'task':       
+            if next_positions is None:
+                # pick next positions
+                self.next_plats = get_next_positions(robots, map, choices, difficulty)
 
+            else:
+                self.next_plats = next_positions
+                
             # get all possible paths
             self.all_paths = get_all_paths(robots, self.next_plats, map)
 
@@ -108,7 +114,7 @@ def get_starting_positions(robots, map):
         # all robots can move at +/- 120 or 180 deg to 
         # stationary robot
         directions = [-120, 120, 180]
-        for key, r in moving_robots.items():
+        for key, r in moving_robots.members.items():
             initial_positions[key] = []
 
             _, dir_to_stat = map.get_direction_from_to(r.position, 
@@ -295,7 +301,7 @@ def get_all_paths(robots, next_plats, map):
     # one clockwise and one anticlockwise, to each new position
     directions = ['clockwise', 'anticlockwise']
     paths = {}
-    for key, r in moving_robots.items():      
+    for key, r in moving_robots.members.items():      
         paths[key] = {}
         for p2 in next_plats:
             paths[key][f'to_plat{p2}'] = {}
@@ -376,7 +382,7 @@ def select_optimal_paths(paths, robots, next_plats, map):
     '''
     stat_robot = robots.get_stat_robot()
     moving_robots = robots.get_moving_robots()
-    moving_robot_ids = list(moving_robots.keys())
+    moving_robot_ids = list(moving_robots.members.keys())
     directions = 'clockwise', 'anticlockwise'
 
     # loop through every combination of robot1_to_plat1 and robot2_to_plat2 paths, 
@@ -619,7 +625,7 @@ def plot_paths(map, robots, optimal_paths):
     # plot hexagons at moving robot positions
     for a in range(2):
         c_ind = 0
-        for key, r in moving_robots.items():
+        for key, r in moving_robots.members.items():
             platforms[a].append(r.position)        
             draw_platform(map, r.position, ax[a], color=mov_colors[a][c_ind])
             c_ind += 1
@@ -717,29 +723,31 @@ def draw_platform(map, pos, ax, color='r'):
    
 
 if __name__ == '__main__':
-    import platform_map
     # directory = '/media/jake/LaCie/robot_maze_workspace'
     directory = 'D:/testFolder/pico_robots/map'
     # directory = 'C:/Users/Jake/Desktop/map_of_platforms'
     # map = platform_map.open_map(map='restricted_map', directory=directory)
     map = Map(directory=directory)
 
-    import robot_class
-    robot1 = robot_class.Robot(1, '192.100.0.101', 1025, 72, 0, 'moving', map)
-    robot2 = robot_class.Robot(2, '192.100.0.102', 1026, 81, 0, 'stationary', map)
-    robot3 = robot_class.Robot(3, '192.100.0.103', 1027, 91, 0, 'moving', map)
+    robot1 = Robot(1, '192.100.0.101', 1025, 72, 0, 'moving', map)
+    robot2 = Robot(2, '192.100.0.102', 1026, 81, 0, 'stationary', map)
+    robot3 = Robot(3, '192.100.0.103', 1027, 91, 0, 'moving', map)
 
-    robots = robot_class.Robots()
+    robots = Robots()
     robots.add_robots([robot1, robot2, robot3])
 
     next_plats = [90, 71]    
     # initial_positions = get_starting_positions(robots, map)
-    paths = get_all_paths(robots, next_plats, map)
-    optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
+    # paths = get_all_paths(robots, next_plats, map)
+    # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
     # print(optimal_paths)
 
-    fig = plot_paths(map, robots, optimal_paths)
+    paths = Paths(robots, map, next_positions=next_plats)
+
+    paths.plot_paths(robots, map)
     
-    commands, durations, _ = paths_to_commands(robots, optimal_paths, map)
+    # commands, durations, _, final_orientations = paths_to_commands(robots, optimal_paths, map)
     
-    plt.show()
+    # plt.show()
+
+    paths.close_paths_plot()

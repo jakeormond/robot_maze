@@ -14,7 +14,6 @@ import socket
 from typing import Any
 from configurations import read_yaml
 from tkinter import filedialog
-import create_path as cp 
 import platform_map as mp
 import copy
 
@@ -130,6 +129,11 @@ class Robots:
     
     def get_robot_ids(self):
         return list[self.members.keys()]
+    
+    def update_positions(self, paths):
+        for r in self.members:
+            self.members[r].set_new_position(paths.optimal_paths[r][-1])
+            self.members[r].set_new_orientation(paths.final_orientations[r])
 
     
 # DON@T THINK WE NEED THIS FUNCTION, DELETE IT

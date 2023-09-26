@@ -11,6 +11,7 @@ import os
 import tkinter as tk
 from tkinter import filedialog
 import copy
+import pickle
 
 # map definition
 class Map:
@@ -21,6 +22,7 @@ class Map:
             self.restricted_map = None
             self.excluded_plats = None
             self.goal_position = None
+            self.platform_coordinates = None
         
         else:
             self.open_map(directory=directory)
@@ -44,12 +46,7 @@ class Map:
                     save_map(map_type, self.restricted_map, directory)
     
     def open_map(self, directory=None):
-        if directory == None:
-            # ask user to select directory from gui
-            root = tk.Tk()
-            root.withdraw()
-            directory = filedialog.askdirectory()
-
+        # get map
         self.platform_map = open_map(map_type='platform_map', directory=directory)
         
         # determine if file restricted_map.csv exists in directory
@@ -67,6 +64,9 @@ class Map:
                         self.excluded_plats.append(self.platform_map[i,j])
         else:
             print('Restricted map has not been generated yet.')
+        
+        # get platform coordinates
+        self.platform_coordinates = open_platform_coordinates(directory=directory)
 
     def get_indices_of_postion(self, position):
         return np.argwhere(self.platform_map == position)[0]
@@ -205,6 +205,46 @@ class Map:
     
     def platform_list(self):
         return np.unique(self.platform_map[~np.isnan(self.platform_map)])
+    
+    def get_platform_coordinates(self, platform):
+        return self.platform_coordinates[platform][0:2]
+    
+    def get_crop_nums(self, robot_positions, window_size=(600, 600), 
+                      resolution=(2448, 2048)):
+        n_pos = len(robot_positions)
+        plat_coor = np.zeros((n_pos,2))
+        
+        for i in range(n_pos):
+            plat_coor[i,:] = self.get_platform_coordinates(robot_positions[i])
+        
+        min_x = np.min(plat_coor[:,0])
+        max_x = np.max(plat_coor[:,0])
+
+        min_y = np.min(plat_coor[:,1])
+        max_y = np.max(plat_coor[:,1])
+
+        mean_x = np.mean([min_x, max_x])
+        mean_y = np.mean([min_y, max_y])
+
+        crop_x = mean_x - window_size[0]/2
+        crop_y = mean_y - window_size[1]/2
+
+        if crop_x < 1:
+            crop_x = 1
+        
+        if crop_y < 1:
+            crop_y = 1
+
+        if crop_x + window_size[0] > resolution[0]:
+            crop_x = resolution[0] - window_size[0]
+
+        if crop_y + window_size[1] > resolution[1]:
+            crop_y = resolution[1] - window_size[1]
+        
+        return (int(crop_x), int(crop_y), window_size[0], window_size[1])
+
+
+        return get_crop_nums(robot_positions, self)
     
        
     @staticmethod
@@ -525,6 +565,19 @@ def open_map(map_type=None, directory=None):
     platform_map = np.loadtxt(filepath, delimiter=',')
 
     return platform_map
+
+def open_platform_coordinates(directory=None):
+    if directory is None:
+        # ask user to select directory from gui
+        root = tk.Tk()
+        root.withdraw()
+        print('Select directory containing platform coordinates')
+        directory = filedialog.askdirectory()
+    
+    with open(directory + '/platform_coordinates.pickle', 'rb') as handle:
+        platform_coordinates = pickle.load(handle)
+    
+    return platform_coordinates
 
 def get_rows_and_cols_to_exclude(platform_map, start_platform, stop_platform, extra_row):
     # find the row and column indices of the start and stop platforms, returned as integers

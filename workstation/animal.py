@@ -3,6 +3,8 @@ The animal class contains the animal's position calculated
 from the tracking data. It also contains the animal's choice.
 '''
 import socket
+import os
+import csv
 
 class Animal:
     def __init__(self, host, port, buffer_size, n):
@@ -30,6 +32,69 @@ class Animal:
 
     def get_recent_data(self):
         return self.data_buffer
+
+    def parse_recent_data(self):
+
+    
+def write_bonsai_filenames(datetime_str, directory):
+    ''' these are the names of the files that Bonsai will
+    save the data to. They are saved in the Bonsai directory in 
+    csv files. The csv files are: 1) videofile_name.csv, 2)
+    videoTS_FileName.csv, 3) cropTimes_FileName.csv, 4) 
+    cropValues_FileName.csv, 5) pulseTS_FileName.csv '''
+
+    # 1) video file
+    videofile_name = 'video_' + datetime_str + '.avi'
+    filepath = os.path.join(directory, 'video_FileName.csv')
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([videofile_name])
+
+    # 2) video timestamps
+    videoTS_filename = 'videoTS_' + datetime_str + '.csv'
+    filepath = os.path.join(directory, 'videoTS_FileName.csv')
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([videoTS_filename])
+
+    # 3) crop times
+    cropTimes_filename = 'cropTimes_' + datetime_str + '.csv'
+    filepath = os.path.join(directory, 'cropTimes_FileName.csv')
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([cropTimes_filename])   
+    
+    # 4) crop values
+    cropValues_filename = 'cropValues_' + datetime_str + '.csv'
+    filepath = os.path.join(directory, 'cropValues_FileName.csv')
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([cropValues_filename])
+    
+    # 5) pulse timestamps
+    pulseTS_filename = 'pulseTS_' + datetime_str + '.csv'
+    filepath = os.path.join(directory, 'pulseTS_FileName.csv')
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([pulseTS_filename])
+
+def write_bonsai_crop_params(params, directory):
+    filename = 'cropNums.csv'
+    filepath = os.path.join(directory, filename)
+    # write the crop parameters to a csv file as 
+    # a column 
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        for value in params:
+            writer.writerow([value])
+    
+def delete_bonsai_csv(directory):
+    file_substr = ['cropTimes', 'cropValues', 'pulseTS', 
+                   'video', 'videoTS']
+    for f in file_substr:
+        file = f + '_FileName.csv'
+        os.remove(os.path.join(directory, file))
+  
 
 if __name__ == "__main__":
     host = '0.0.0.0'  # Replace with your server's IP address

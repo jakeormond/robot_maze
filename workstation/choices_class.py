@@ -14,7 +14,7 @@ class Choices:
         # save the current time
         curr_time = dt.datetime.now()
         formatted_time = curr_time.strftime("%Y-%m-%d_%H.%M.%S")
-        self.name = f'choices_{formatted_time}'
+        self.name = formatted_time
 
         # initialize self.data as an empty dataframe with columns for 
         # start time, choice time, starting position, chosen position, and 

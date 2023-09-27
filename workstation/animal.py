@@ -5,6 +5,8 @@ from the tracking data. It also contains the animal's choice.
 import socket
 import os
 import csv
+import struct
+import numpy as np
 
 class Animal:
     def __init__(self, host, port, buffer_size, n):
@@ -32,10 +34,38 @@ class Animal:
 
     def get_recent_data(self):
         return self.data_buffer
-
-    def parse_recent_data(self):
-
     
+    def parse_most_recent_data(self):
+        received_data = self.data_buffer[-1]
+        parsed_data = parse_data(received_data)
+
+        return parsed_data
+
+    def parse_all_recent_data(self):
+        received_data = self.data_buffer
+
+        # get the number of packets
+        num_packets = len(received_data)
+
+        # initialize array to store the parsed data
+        parsed_data = np.zeros((num_packets, 6))
+
+        # loop through the packets and parse the data
+        for i in range(num_packets):
+            parsed_data[i, :] = parse_data(received_data[i])
+        
+        return parsed_data
+
+def parse_data(received_data):
+    parsed_data = np.zeros((6))
+
+    indices = [18, 22, 26, 30, 34, 38]
+
+    for i, index in enumerate(indices):
+        parsed_data[i] = int.from_bytes(received_data[index:index+2], byteorder='big', signed=True)
+    
+    return parsed_data
+       
 def write_bonsai_filenames(datetime_str, directory):
     ''' these are the names of the files that Bonsai will
     save the data to. They are saved in the Bonsai directory in 
@@ -97,8 +127,8 @@ def delete_bonsai_csv(directory):
   
 
 if __name__ == "__main__":
-    host = '0.0.0.0'  # Replace with your server's IP address
-    port = 8000  # Replace with your desired UDP port
+    host = '0.0.0.0'  # server's IP address
+    port = 8000  # UDP port
     buffer_size = 1024
     n = 100  # Number of previous data points to store
 
@@ -114,5 +144,4 @@ if __name__ == "__main__":
 
     # Now, you can access the recent data from the receiver object in your main program
     while True:
-        recent_data = receiver.get_recent_data()
-        # Process recent data as needed in your main program
+        print(receiver.data_buffer)

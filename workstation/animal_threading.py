@@ -3,13 +3,13 @@ The animal class contains the animal's position calculated
 from the tracking data. It also contains the animal's choice.
 '''
 import socket
-import os
-import csv
-import struct
 import numpy as np
 import threading
 import time
 import pickle
+
+MIN_PLATFORM_DURA = 1 # length of time animal needs to be on 
+# new platform before choice is registered
 
 class Animal:
     def __init__(self, host, port, buffer_size, n):
@@ -18,40 +18,50 @@ class Animal:
         self.buffer_size = buffer_size
         self.n = n
         self.data_buffer = []
+        self.current_platform = None
         self.data_receiver_thread = None
-        self.terminate_thread = threading.Event()  # Termination flag for the data receiver thread
+        # self.data_receiver_started_event = threading.Event()  # Event to signal the data receiver thread has started
+        self.next_platform_event = threading.Event()  # Event to signal the next platform thread is finished       
 
-        # Start the data receiver thread when an instance is created
-        # receiving a packet for every video frame, so roughly 30 per second
-        # self.data_receiver_thread = threading.Thread(target=self.receive_data)
-        # self.data_receiver_thread.start()
 
-    def start_data_receiver(self, possible_platforms, platform_coordinates, 
-                     crop_coordinates):
+    def find_new_platform(self, possible_platforms, start_platform, 
+                            platform_coordinates, crop_coordinates):
+        
+        self.start_data_receiver(possible_platforms, start_platform, 
+                            platform_coordinates, crop_coordinates)        
+        self.wait_for_next_platform_event()       
+
+    
+    def start_data_receiver(self, possible_platforms, start_platform, 
+                            platform_coordinates, crop_coordinates):
         # Start the data receiver thread
         if self.data_receiver_thread is None or not self.data_receiver_thread.is_alive():
-            self.terminate_thread.clear()  # Clear the termination flag
-            self.data_receiver_thread = threading.Thread(target=self.receive_data, 
-                                            args=(possible_platforms, 
+            self.data_receiver_thread = threading.Thread(target=self._receive_data, 
+                                            args=(possible_platforms, start_platform,
                                                     platform_coordinates, crop_coordinates))
             self.data_receiver_thread.start()
 
-    def stop_data_receiver(self):
-        # signal the thread to terminate
-        self.terminate_thread.set()
-        
+
+    def wait_for_next_platform_event(self):
+        # Block until the monitor event is set
+        self.next_platform_event.wait()
+                
         # Wait for the data receiver thread to finish
         if self.data_receiver_thread is not None and self.data_receiver_thread.is_alive():
             self.data_receiver_thread.join()  # Wait for the thread to finish
             self.data_receiver_thread = None  # Set it to None after stopping
             # clear the data buffer
             self.data_buffer = []
+            # clear the next platform event
+            self.next_platform_event.clear()
 
-    def receive_data(self, possible_platforms, platform_coordinates, 
-                     crop_coordinates):
+
+    def _receive_data(self, possible_platforms, start_platform,
+                      platform_coordinates, crop_coordinates):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             udp_socket.bind((self.host, self.port))
-            while not self.terminate_thread.is_set():
+            
+            while True: #not self.terminate_thread.is_set():
                 try:
                     data, _ = udp_socket.recvfrom(self.buffer_size)
                     parsed_data = self.parse_most_recent_data(data)
@@ -63,8 +73,38 @@ class Animal:
 
                     # Process and store the received data
                     self.store_data((curr_plat, timestamp))
+
+                    # find the next platform
+                    recent_data = self.get_data()
+
+                    target_platform = recent_data[-1][0]
+
+                    if target_platform != start_platform:
+                        recent_data = recent_data[::-1]
+                        target_time = recent_data[0][1]
+                        for i in range(1, len(recent_data)):
+                            if recent_data[i][0] == target_platform:
+                                start_time = recent_data[i][1]
+                                duration = target_time - start_time
+
+                                if duration >= MIN_PLATFORM_DURA:
+                                    new_platform = target_platform
+                                    self.current_platform = new_platform
+                                    self.next_platform_event.set()
+                                    return 
+                            else:
+                                break
+
                 except socket.timeout:
-                    pass
+                    # Handle socket timeout error here
+                    print("Socket timeout error: Unable to receive data. Retrying...")
+                    # You can add more specific error handling or retry logic here
+
+                except Exception as e:
+                    # Handle other exceptions here
+                    print(f"Error: {e}")
+                    # You can add more specific error handling or logging here
+
         
     def store_data(self, data):
         # Add the new data point to the buffer
@@ -74,9 +114,19 @@ class Animal:
         if len(self.data_buffer) > self.n:
             self.data_buffer.pop(0)  # Remove the oldest data point
 
+
     def get_data(self):
         return self.data_buffer
- 
+    
+    
+    def parse_most_recent_data(self, data):
+        parsed_data = parse_data(data)
+        return parsed_data
+    
+    
+    def get_current_platform(self):
+        return self.current_platform
+    
    
 def parse_data(received_data):
     parsed_data = np.zeros((6))
@@ -134,34 +184,15 @@ if __name__ == "__main__":
     host = '0.0.0.0'  # server's IP address
     port = 8000  # UDP port
     buffer_size = 1024
-    n = 100  # Number of previous data points to store
+    n = 200  # Number of previous data points to store
 
     receiver = Animal(host, port, buffer_size, n)
 
-    # Now, you can access the recent data from the receiver object in your main program
-    counter = 0
-    while True:
-        print(receiver.data_buffer)
-        counter += 1
+    receiver.find_new_platform(possible_platforms, 61, platform_coordinates, crop_coor)
 
-        if counter == 100:
-            receiver.start_data_receiver(possible_platforms, platform_coordinates, 
-                     crop_coor)
-            print('Started data receiver thread')
+    current_platform = receiver.get_current_platform()
+    print(current_platform)
+    print(current_platform)
+    
 
-        if counter == 200:
-            receiver.stop_data_receiver()
-            print('Stopped data receiver thread')
-
-        if counter == 300:
-            receiver.start_data_receiver(possible_platforms, platform_coordinates, 
-                     crop_coor)
-            print('Started data receiver thread')
-
-        if counter == 400:
-            receiver.stop_data_receiver()
-            print('Stopped data receiver thread')
-
-        # wait for .03 seconds
-        time.sleep(.03)
-       
+  

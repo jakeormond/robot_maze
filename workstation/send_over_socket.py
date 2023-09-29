@@ -199,7 +199,7 @@ def send_over_sockets_threads(robots, paths):
 
     data_queue = queue.Queue() # to collect the decoded data from handle_server
 
-    NUM_COMMANDS = 3
+    num_commands = len(commands[robot_keys[0]]) # both robots should have same number of commands
 
     for c in range(NUM_COMMANDS):
         threads = []

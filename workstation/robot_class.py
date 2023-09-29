@@ -134,6 +134,15 @@ class Robots:
         for r in self.members:
             self.members[r].set_new_position(paths.optimal_paths[r][-1])
             self.members[r].set_new_orientation(paths.final_orientations[r])
+        
+        stat_robot = self.get_stat_robot(self)
+        start_platform = stat_robot.position
+        
+        positions = self.get_positions(self)
+
+        return start_platform, positions
+
+        
 
     
 # DON@T THINK WE NEED THIS FUNCTION, DELETE IT

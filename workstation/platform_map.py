@@ -12,6 +12,7 @@ import tkinter as tk
 from tkinter import filedialog
 import copy
 import pickle
+# from robot_class import Robots
 
 # map definition
 class Map:
@@ -28,7 +29,7 @@ class Map:
             self.open_map(directory=directory)
 
     def set_goal_position(self, goal_position):
-        self.goal_position = goal_position
+        self.goal_position = int(goal_position)
 
     def restrict_map(self, start_platform, stop_platform, extra_row=0):
         self.restricted_map, self.excluded_plats = \
@@ -119,7 +120,42 @@ class Map:
             if position2 in ring:
                 return distance
             distance += 1    
-    
+
+    def check_adjacent(self, position1, position2):
+        ''' checks if the 2 positions are adjacent. This is necessary
+        to determine if we need to move the moving robots away from the
+        stationary robot first, before sending them on their paths.'''
+
+        distance = self.find_shortest_distance(position1, position2)
+        if distance == 1:
+            return True
+        else:
+            return False
+        
+
+    def check_robots_adjacent(self, robots):
+        robot_names = list(robots.members.keys())
+        if len(robot_names) != 3:
+            print('There must be 3 robots to check if they are adjacent')
+            return None
+        
+        adjacent_bools = np.zeros(3)
+        counter = 0
+        for i in range(len(robot_names)-1):
+            for j in range(i+1, len(robot_names)):
+                adjacent_bools[counter] = \
+                    self.check_adjacent(robots.members[robot_names[i]].position, 
+                                       robots.members[robot_names[j]].position)
+                counter += 1
+        
+        if np.sum(adjacent_bools) >= 2:
+            return True
+        elif np.sum(adjacent_bools) == 0:
+            return False
+        else: # only 1 pair of robots is adjacent
+            print('Only 1 pair of robots is adjacent, they are not positioned correctly...')
+            return None
+
     def get_direction_from_to(self, position1, position2):
         # get the direction from position1 to position2
         # returns tuple of string 'vert', 'nw', or 'ne' and value in degrees.

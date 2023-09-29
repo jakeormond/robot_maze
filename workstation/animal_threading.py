@@ -20,7 +20,6 @@ class Animal:
         self.data_buffer = []
         self.current_platform = None
         self.data_receiver_thread = None
-        # self.data_receiver_started_event = threading.Event()  # Event to signal the data receiver thread has started
         self.next_platform_event = threading.Event()  # Event to signal the next platform thread is finished       
 
 

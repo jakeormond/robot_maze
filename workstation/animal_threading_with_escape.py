@@ -7,10 +7,9 @@ import numpy as np
 import threading
 import time
 import pickle
-import queue
 import keyboard
 
-MIN_PLATFORM_DURA = 10 # length of time animal needs to be on 
+MIN_PLATFORM_DURA = 2 # length of time animal needs to be on 
 # new platform before choice is registered
 
 class Animal:
@@ -24,16 +23,17 @@ class Animal:
         self.data_receiver_thread = None
         self.manual_input_thread = None
         self.next_platform_event = threading.Event()  # Event to signal the next platform thread is finished       
-        self.user_input_queue = queue.Queue()
 
 
     def find_new_platform(self, possible_platforms, start_platform, 
                             platform_coordinates, crop_coordinates):
         
+        print("Finding new platform...")
+
         self._start_data_receiver(possible_platforms, start_platform, 
                             platform_coordinates, crop_coordinates)        
         
-        self._start_manual_input_thread()
+        self._start_manual_input_thread(possible_platforms, start_platform)
         self._wait_for_next_platform_event()       
         
     
@@ -46,10 +46,11 @@ class Animal:
                                                     platform_coordinates, crop_coordinates))
             self.data_receiver_thread.start()
 
-    def _start_manual_input_thread(self):
+    def _start_manual_input_thread(self, possible_platforms, start_platform):
         # Start the data receiver thread
         if self.manual_input_thread is None or not self.manual_input_thread.is_alive():
-            self.manual_input_thread = threading.Thread(target=self.listen_for_key)
+            self.manual_input_thread = threading.Thread(target=self._listen_for_key, 
+                                                        args=(possible_platforms, start_platform))
             self.manual_input_thread.start()
 
 
@@ -78,7 +79,7 @@ class Animal:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             udp_socket.bind((self.host, self.port))
             
-            while True: #not self.terminate_thread.is_set():
+            while not self.next_platform_event.is_set(): #not self.terminate_thread.is_set():
                 try:
                     data, _ = udp_socket.recvfrom(self.buffer_size)
                     parsed_data = self.parse_most_recent_data(data)
@@ -89,7 +90,7 @@ class Animal:
                     timestamp = time.time()
 
                     # Process and store the received data
-                    self.store_data((curr_plat, timestamp))
+                    self._store_data((curr_plat, timestamp))
 
                     # find the next platform
                     recent_data = self.get_data()
@@ -121,25 +122,45 @@ class Animal:
                     # Handle other exceptions here
                     print(f"Error: {e}")
                     # You can add more specific error handling or logging here
+
+   
     
-    
-    def listen_for_key(self):
+    def _listen_for_key(self, possible_platforms, start_platform):      
         trigger_key = 's'
+        # Enter the blocking mode to suppress key events
+        keyboard.block_key(trigger_key)
 
-        while True:
-            if receiver.next_platform_event.is_set():
-                break
-
+        while not self.next_platform_event.is_set():
             if keyboard.is_pressed(trigger_key):
                 # Execute the method when the trigger key is pressed
-                self.execute_method()
-                break
+                keyboard.unblock_key(trigger_key)
+                self.next_platform_event.set()
+                self._manually_select_platform(possible_platforms, start_platform)                
+                return
+            time.sleep(0.1)
            
-    def execute_method(self):
-        print("Method executed!")
+    def _manually_select_platform(self, possible_platforms, start_platform):
+        # remove start_platform from possible_platforms
+        # make a copy of possible_platforms
+        choice_platforms = possible_platforms.copy()
+        choice_platforms.remove(start_platform)
+        print("Manually select platform from the following options (press 1 or 2):")
+        print(f"platforms 1: {choice_platforms[0]}, 2: {choice_platforms[1]}")
+        while True:
+            user_input = input("Enter your choice (1 or 2): ")
+            
+            if user_input == '1':
+                self.current_platform = choice_platforms[0]
+                return
+            elif user_input == '2':
+                self.current_platform = choice_platforms[1]
+                return
+            else:
+                print("Invalid input. Please try again.")
+                print(f"platforms 1: {choice_platforms[0]}, 2: {choice_platforms[1]}")
     
        
-    def store_data(self, data):
+    def _store_data(self, data):
         # Add the new data point to the buffer
         self.data_buffer.append(data)
         
@@ -199,6 +220,70 @@ def get_current_platform(parsed_data, possible_platforms,
     
     return current_platform
 
+
+def write_bonsai_filenames(datetime_str, directory):
+    ''' these are the names of the files that Bonsai will
+    save the data to. They are saved in the Bonsai directory in 
+    csv files. The csv files are: 1) videofile_name.csv, 2)
+    videoTS_FileName.csv, 3) cropTimes_FileName.csv, 4) 
+    cropValues_FileName.csv, 5) pulseTS_FileName.csv '''
+
+    # 1) video file
+    videofile_name = 'video_' + datetime_str + '.avi'
+    filepath = os.path.join(directory, 'video_FileName.csv')
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([videofile_name])
+
+    # 2) video timestamps
+    videoTS_filename = 'videoTS_' + datetime_str + '.csv'
+    filepath = os.path.join(directory, 'videoTS_FileName.csv')
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([videoTS_filename])
+
+    # 3) crop times
+    cropTimes_filename = 'cropTimes_' + datetime_str + '.csv'
+    filepath = os.path.join(directory, 'cropTimes_FileName.csv')
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([cropTimes_filename])   
+    
+    # 4) crop values
+    cropValues_filename = 'cropValues_' + datetime_str + '.csv'
+    filepath = os.path.join(directory, 'cropValues_FileName.csv')
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([cropValues_filename])
+    
+    # 5) pulse timestamps
+    pulseTS_filename = 'pulseTS_' + datetime_str + '.csv'
+    filepath = os.path.join(directory, 'pulseTS_FileName.csv')
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([pulseTS_filename])
+
+
+def write_bonsai_crop_params(params, directory):
+    filename = 'cropNums.csv'
+    filepath = os.path.join(directory, filename)
+    # write the crop parameters to a csv file as 
+    # a column 
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        for value in params:
+            writer.writerow([value])
+    
+
+def delete_bonsai_csv(directory):
+    file_substr = ['cropTimes', 'cropValues', 'pulseTS', 
+                   'video', 'videoTS']
+    for f in file_substr:
+        file = f + '_FileName.csv'
+        os.remove(os.path.join(directory, file))
+
+
+
        
 if __name__ == "__main__":
     
@@ -226,6 +311,14 @@ if __name__ == "__main__":
     current_platform = receiver.get_current_platform()
     print(current_platform)
     print(current_platform)
-    
 
-  
+    print('sleeping')
+    time.sleep(1)
+    print('executing again')
+    
+    
+    receiver.find_new_platform(possible_platforms, 61, platform_coordinates, crop_coor)
+
+    current_platform = receiver.get_current_platform()
+    print(current_platform)
+    print(current_platform)

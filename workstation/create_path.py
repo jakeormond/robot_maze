@@ -10,7 +10,6 @@ import os
 from robot_class import Robot, Robots 
 import platform_map as pm
 from platform_map import Map
-import platform_map as mp  
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import time
@@ -42,14 +41,16 @@ class Paths:
             self.optimal_paths = get_direct_paths(robots, next_positions, map)
 
         # get commands and timings
+        self.command_strings, self.commands, self.orientations \
+            = paths_to_commands(robots, self.optimal_paths, map)        
         
-        self.time_per_turn = time_per_turn
+        # self.time_per_turn = time_per_turn
 
-        self.time_per_line = time_per_line
+        # self.time_per_line = time_per_line
         
-        self.command_strings, self.durations, self.command_numeric, \
-             self.final_orientations = paths_to_commands(robots, \
-                    self.optimal_paths, map, self.time_per_turn, self.time_per_line)        
+        # self.command_strings, self.durations, self.command_numeric, \
+        #      self.final_orientations = paths_to_commands(robots, \
+        #             self.optimal_paths, map, self.time_per_turn, self.time_per_line)        
 
     def plot_paths(self, robots, map):
         fig_handle = plot_paths(map, robots, self.optimal_paths)
@@ -70,7 +71,25 @@ def get_starting_positions(robots, map):
     5) boomerang_mid_stat. Note that at present, the code doesn't 
     distinguish configurations 1 and 2. 
     '''
-    # first, identify shape
+    # separate stationary robot from moving robots
+    stat_robot = robots.get_stat_robot()        
+    moving_robots = robots.get_moving_robots()    
+    initial_positions = {}
+    # first, check if all robots at least 2 pairs of robots are 
+    # adjacent to each other. They should be if the task has started,
+    # but at trial start, the moving robots should be placed 1 platform
+    # away from the stationary robot, and 1 platform away from each other; 
+    # in that case, there current positions are the starting positions so 
+    # no need to compute new ones.
+    adj_bool = map.check_robots_adjacent(robots)
+    if not adj_bool:
+        keys = moving_robots.members.keys()
+        for key in keys:
+            initial_positions[key] = np.array([moving_robots.members[key].position])
+       
+        return initial_positions
+
+    # if proceeding, identify shape
     positions = robots.get_positions()
     direction, common_axis = map.get_common_axis(robots)
     if direction is not None:
@@ -88,14 +107,9 @@ def get_starting_positions(robots, map):
 
         else:
             shape = 'boomerang'
-    
-    # separate stationary robot from moving robots
-    stat_robot = robots.get_stat_robot()        
-    moving_robots = robots.get_moving_robots()    
-    
+      
     # now, identify position of stay put robot if shape == boomerang
     stay_put_robot = None
-    initial_positions = {}
     if shape == 'boomerang':
             # get distance from each moving robot to the stat robot
             for key, r in moving_robots.members.items():
@@ -130,8 +144,8 @@ def get_starting_positions(robots, map):
     else: # shape is boomerang and there is a stay put robot
         # the moving robot can only move to a single position which is at 
         # +/-120 deg to both the stationary robot and the stay put robot
-        moving_robot_name = list(moving_robots.keys())[0]
-        moving_robot = moving_robots[moving_robot_name]
+        moving_robot_name = list(moving_robots.members.keys())[0]
+        moving_robot = moving_robots.members[moving_robot_name]
         _, stat_direction = map.get_direction_from_to(moving_robot.position, 
                                                    stat_robot.position)
         _, stay_direction = map.get_direction_from_to(moving_robot.position, 
@@ -155,8 +169,8 @@ def get_starting_positions(robots, map):
             np.intersect1d(poss_pos_stat, poss_pos_stay)
 
     # reorder initial_positions if robot2 key is before robot1 key or 
-    # robot 3 key is before robot1 or robot2 key. Unnecessary, but it 
-    # seem them out of order brings out some ocd. 
+    # robot 3 key is before robot1 or robot2 key. Unnecessary, but 
+    # seeing them out of order brings out some ocd. 
     keys = list(initial_positions.keys())
     if robots.members[keys[0]].id > robots.members[keys[1]].id:
         temp_init_pos = initial_positions[keys[0]]
@@ -278,7 +292,7 @@ def get_all_paths(robots, next_plats, map):
         if p not in stat_robot_ring:
             raise ValueError(f'Next platform {p} is not adjacent to the stationary robot.')
    
-    # setermine if all robots are on the same axis, and if so,
+    # determine if all robots are on the same axis, and if so,
     # if the stationary robot lies at the end of the line of robots, as this 
     # is a special case where the opposited robot will need to move to the 
     # stationary robot's 3rd order ring
@@ -462,7 +476,8 @@ def construct_paths(robots, next_plats, map):
 
     return optimal_paths
 
-def path_to_command(robot, path, map, time_per_turn, time_per_line):
+# def path_to_command(robot, path, map, time_per_turn, time_per_line):
+def path_to_command(robot, path, map):
     ''' converts path to the robot command. The command takes
       the form of a series of turns and linear movements: 
       e.g. the command [2,1,4,2] would tell the robot to turn clockwise by
@@ -470,13 +485,15 @@ def path_to_command(robot, path, map, time_per_turn, time_per_line):
       (i.e. 6-2) lines, then forward 2 lines'''
     
     command = []
+    directions = []
 
     # get starting position and direction
     start_pos = robot.position
     start_direction = robot.orientation
     
     # check if path begins with start positions; if it does, this  indicates
-    # that the robot needs to wait for the other robot to move out of the way.
+    # that the robot needs to wait for the other robot to move out of the way
+    # (unless it is the start of the trial, but we handle this elsewhere).
     if start_pos == path[0]:
         command = [0, 0]
     else:
@@ -488,6 +505,7 @@ def path_to_command(robot, path, map, time_per_turn, time_per_line):
     for i, p in enumerate(path[:-1]):
         # get direction from current position to p
         _, direction = map.get_direction_from_to(p, path[i+1])
+        directions.append(direction)
 
         # if direction is not the same as prev_direction, then set the linear
         # distance from the incremented linear_counter, and then calculate turn
@@ -504,48 +522,58 @@ def path_to_command(robot, path, map, time_per_turn, time_per_line):
     # append final linear_counter to command
     command.append(linear_counter)    
     subcommands = [None, None, None]
+    suborientations = [None, None]
+
     subcommands[0] = [command[0]]
-    subcommands[1] = command[1:-1]
-    subcommands[1].insert(0,0)
+    suborientations[0] = [directions[0]]
+    
+    if command[1] == 0:
+        subcommands[1] = command[2:-1]
+    else:
+        subcommands[1] = command[1:-1]
+        subcommands[1].insert(0,0)
     subcommands[2] = [0, command[-1]]
+    suborientations[1] = directions[1:]
 
     # cast command to int
     for i in range(len(subcommands)):
         subcommands[i] = [int(c) for c in subcommands[i]]
 
-    duration = get_command_timing(subcommands, time_per_turn = 0.5, time_per_line = 1.)
+    # duration = get_command_timing(subcommands, time_per_turn = 0.5, time_per_line = 1.)
 
     command_string = int_to_string_command(subcommands)
 
-    final_orientation = direction
+    # final_orientation = direction
+    # final_orientation = directions[-1]
 
-    return command_string, duration, subcommands, final_orientation
+    # return command_string, duration, subcommands, final_orientation
+    return command_string, subcommands, suborientations
 
-def get_command_timing(command, time_per_turn = 0.5, time_per_line = 1.):
+# def get_command_timing(command, time_per_turn = 0.5, time_per_line = 1.):
 
-    ''' returns the timing of the command in seconds. The timing is based on the estimated 
-    cumulative time it takes the robots to execute the movements in the command. 
-    In the future, this should be replaced with a more accurate timing based on empirical
-    tests of the robots '''
+#     ''' returns the timing of the command in seconds. The timing is based on the estimated 
+#     cumulative time it takes the robots to execute the movements in the command. 
+#     In the future, this should be replaced with a more accurate timing based on empirical
+#     tests of the robots '''
 
-    # determine how many lists are in command
-    n_lists = len(command)
+#     # determine how many lists are in command
+#     n_lists = len(command)
 
-    # calculate duration of each sub-command
-    duration = [0] * n_lists
+#     # calculate duration of each sub-command
+#     duration = [0] * n_lists
 
-    for i in range(n_lists):
-        for i2, c in enumerate(command[i]):
-            if i2 == 0 and c == 0 and (len(command[i]) == 1 or command[i][i2+1] == 0):
-                duration[i] += 1
+#     for i in range(n_lists):
+#         for i2, c in enumerate(command[i]):
+#             if i2 == 0 and c == 0 and (len(command[i]) == 1 or command[i][i2+1] == 0):
+#                 duration[i] += 1
             
-            if i2%2 == 0:
-                duration[i] += c * time_per_turn
-            else:
-                if i2%2 == 1:
-                    duration[i] += c * time_per_line
+#             if i2%2 == 0:
+#                 duration[i] += c * time_per_turn
+#             else:
+#                 if i2%2 == 1:
+#                     duration[i] += c * time_per_line
     
-    return duration
+#     return duration
 
 def int_to_string_command(command):
     ''' converts the command from a list of integers to a string that can be 
@@ -574,7 +602,7 @@ def int_to_string_command(command):
     return string_command
 
 
-def paths_to_commands(robots, paths, map, time_per_turn = 0.5, time_per_line = 1.):
+def paths_to_commands(robots, paths, map):
     ''' converts the paths in paths to commands that can be sent to the robots.
      The commands take the form of a series of turns and linear movements: 
       e.g. the command [2,1,4,2] would tell the robot to turn clockwise by
@@ -583,21 +611,95 @@ def paths_to_commands(robots, paths, map, time_per_turn = 0.5, time_per_line = 1
     
     # get the moving robots
     moving_robots = robots.get_moving_robots()
+    robot_list = list(moving_robots.members.keys())
 
     commands = {}
-    durations = {}
     command_strings = {}
-    final_orientations = {}
+    orientations = {}
 
     # loop through each robot and convert its path to a series of commands
     for key, path in paths.items():
-        command_string, duration, command, orientation = path_to_command(moving_robots.members[key], path, map, time_per_turn, time_per_line) 
+        command_string, command, orientation = path_to_command(moving_robots.members[key], path, map) 
         commands[key] = command       
-        durations[key] = duration
         command_strings[key] = command_string
-        final_orientations[key] = orientation
+        orientations[key] = orientation    
+
+    # check if the robots both have any zero commands before 
+    # they start moving (i.e. if they are already in the correct positions)   
+    while True:
+        if commands[robot_list[0]][0] == [0] and commands[robot_list[1]][0] == [0]:
+            for key in commands.keys():
+                # remove the first command from each list
+                command_strings[key] = command_strings[key][1:]
+                commands[key] = commands[key][1:]
+        else:
+            break
+            
+    return command_strings, commands, orientations
+
+
+def split_off_initial_turn(paths):
+    robot_list = list(paths.commands.keys())    
+    if len(paths.commands[robot_list[0]][0]) == 1 and len(paths.commands[robot_list[1]][0]) == 1:
+        # both robots have a single command in their first list
+        # so split off the first command from each robot
+        initial_turns = copy.deepcopy(paths)
+             
+        for key in robot_list:
+            initial_turns.command_strings[key] = [initial_turns.command_strings[key][0]]
+            initial_turns.orientations[key] = [initial_turns.orientations[key][0]]
+            initial_turns.commands[key] = [initial_turns.commands[key][0]]
+
+            paths.command_strings[key] = paths.command_strings[key][1:]
+            paths.orientations[key] = paths.orientations[key][1:]
+            paths.commands[key] = paths.commands[key][1:]
+
+    return initial_turns, paths
+
+
+
+
+# def paths_to_commands(robots, paths, map, time_per_turn = 0.5, time_per_line = 1.):
+#     ''' converts the paths in paths to commands that can be sent to the robots.
+#      The commands take the form of a series of turns and linear movements: 
+#       e.g. the command [2,1,4,2] would tell the robot to turn clockwise by
+#       2 lines, then move forward 1 line, then turn counter-clockwise by 4 
+#       (i.e. 6-2) lines, then forward 2 lines'''
     
-    return command_strings, durations, commands, final_orientations
+#     # get the moving robots
+#     moving_robots = robots.get_moving_robots()
+#     robot_list = list(moving_robots.members.keys())
+
+#     commands = {}
+#     durations = {}
+#     command_strings = {}
+#     final_orientations = {}
+
+#     # loop through each robot and convert its path to a series of commands
+#     for key, path in paths.items():
+#         command_string, duration, command, orientation = path_to_command(moving_robots.members[key], path, map, time_per_turn, time_per_line) 
+#         commands[key] = command       
+#         durations[key] = duration
+#         command_strings[key] = command_string
+#         final_orientations[key] = orientation
+    
+
+#     # check if the robots both have any zero commands before 
+#     # they start moving (i.e. if they are already in the correct positions)
+    
+    
+#     while True:
+#         if commands[robot_list[0]][0] == [0] and commands[robot_list[1]][0] == [0]:
+#             for key in commands.keys():
+#                 # remove the first command from each list
+#                 command_strings[key] = command_strings[key][1:]
+#                 durations[key] = durations[key][1:]
+#                 commands[key] = commands[key][1:]
+#         else:
+#             break
+            
+#     return command_strings, durations, commands, final_orientations
+
 
 
 def plot_paths(map, robots, optimal_paths):
@@ -728,26 +830,32 @@ if __name__ == '__main__':
     # directory = 'C:/Users/Jake/Desktop/map_of_platforms'
     # map = platform_map.open_map(map='restricted_map', directory=directory)
     map = Map(directory=directory)
+    map.goal_position = 156
 
-    robot1 = Robot(1, '192.100.0.101', 1025, 72, 0, 'moving', map)
-    robot2 = Robot(2, '192.100.0.102', 1026, 81, 0, 'stationary', map)
-    robot3 = Robot(3, '192.100.0.103', 1027, 91, 0, 'moving', map)
+    robot1 = Robot(1, '192.100.0.101', 1025, 61, 0, 'stationary', map)
+    robot2 = Robot(2, '192.100.0.102', 1026, 70, 0, 'moving', map)
+    robot3 = Robot(3, '192.100.0.103', 1027, 71, 0, 'moving', map)
+
+    # robot2 = Robot(2, '192.100.0.102', 1026, 89, 0, 'moving', map)
+    # robot3 = Robot(3, '192.100.0.103', 1027, 90, 0, 'moving', map)
 
     robots = Robots()
     robots.add_robots([robot1, robot2, robot3])
 
-    next_plats = [90, 71]    
+    # next_plats = [90, 71]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
     # print(optimal_paths)
 
-    paths = Paths(robots, map, next_positions=next_plats)
+    # paths = Paths(robots, map, next_positions=[52, 42])
+    paths = Paths(robots, map)
 
     paths.plot_paths(robots, map)
     
     # commands, durations, _, final_orientations = paths_to_commands(robots, optimal_paths, map)
     
     # plt.show()
+    split_off_initial_turn(paths)
 
     paths.close_paths_plot()

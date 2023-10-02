@@ -36,6 +36,55 @@ class Paths:
             # select the optimal paths
             self.optimal_paths = select_optimal_paths(self.all_paths, robots, self.next_plats, map)
 
+        elif task == 'move_away': # the rat is at goal, so other 2 robots need to move away
+            # in this case, we can just use the get_starting_positions method to get the 
+            # next positions
+            next_positions = get_starting_positions(robots, map)
+            # this will produce multiple choices for the next platforms. We will choose based 
+            # on the smallest turn angle for the moving robots
+            angle_diffs = {}
+            for key in next_positions.keys():
+                plat_orientation = robots.members[key].orientation
+
+                angle_diffs[key] = []
+                for p in next_positions[key]:
+                    _, angle = map.get_direction_from_to(robots.members[key].position, p)
+                    angle_diff = angle - plat_orientation
+                    if angle_diff > 180:
+                        angle_diff -= 360
+                    elif angle_diff < -180:
+                        angle_diff += 360              
+
+                    angle_diffs[key].append(angle_diff)
+            
+            # determing if the 2 robots have overlapping sets of next platforms
+            keys = list(angle_diffs.keys())
+            i = 0
+            while i < len(next_positions[keys[0]]):
+                # find index of next_positions[keys[0]] in next_positions[keys[1]]
+                i2 = np.where(next_positions[keys[1]] == next_positions[keys[0]][i])[0]
+                if len(i2) > 0:
+                    if abs(angle_diffs[keys[0]][i]) < abs(angle_diffs[keys[1]][i2[0]]):
+                        # remove next_positions[keys[1]][i2] from next_positions[keys[1]]
+                        next_positions[keys[1]] = np.delete(next_positions[keys[1]], i2)
+                        angle_diffs[keys[1]] = np.delete(angle_diffs[keys[1]], i2)
+                    else:
+                        # remove next_positions[keys[0]][i] from next_positions[keys[0]]
+                        next_positions[keys[0]] = np.delete(next_positions[keys[0]], i)
+                        angle_diffs[keys[0]] = np.delete(angle_diffs[keys[0]], i)
+                    
+                else:
+                    i += 1                                    
+            
+            # now, we can select the next positions based on the smallest angle difference
+            next_pos_list = []
+            for key in next_positions.keys():
+                min_ind = np.argmin(np.abs(angle_diffs[key]))
+                next_pos_list.append(next_positions[key][min_ind])
+
+            # select the optimal paths
+            self.optimal_paths = get_direct_paths(robots, next_pos_list, map)
+
         else: # moving robots directly to next positions
             self.next_plats = next_positions
             self.optimal_paths = get_direct_paths(robots, next_positions, map)
@@ -52,6 +101,10 @@ class Paths:
         #      self.final_orientations = paths_to_commands(robots, \
         #             self.optimal_paths, map, self.time_per_turn, self.time_per_line)        
 
+    def split_off_initial_turn(self):
+        initial_turns = split_off_initial_turn(self)
+        return initial_turns
+    
     def plot_paths(self, robots, map):
         fig_handle = plot_paths(map, robots, self.optimal_paths)
         self.fig_handle = fig_handle
@@ -178,10 +231,11 @@ def get_starting_positions(robots, map):
         initial_positions[keys[0]] = temp_init_pos
        
     return initial_positions
-              
+
+
 def get_next_positions(robots, map, choices, difficulty):
     ''' identify the stationary robot, and pseudo-randomly
-    pick the next to positions for the moving robots, such that 
+    pick the next two positions for the moving robots, such that 
     previous options are avoided if possible. '''
 
     # get stationary robot
@@ -533,7 +587,11 @@ def path_to_command(robot, path, map):
         subcommands[1] = command[1:-1]
         subcommands[1].insert(0,0)
     subcommands[2] = [0, command[-1]]
-    suborientations[1] = directions[1:]
+
+    if len(directions) == 1:
+        suborientations[1] = [directions[0]]
+    else:
+        suborientations[1] = directions[1:]
 
     # cast command to int
     for i in range(len(subcommands)):
@@ -654,7 +712,10 @@ def split_off_initial_turn(paths):
             paths.orientations[key] = paths.orientations[key][1:]
             paths.commands[key] = paths.commands[key][1:]
 
-    return initial_turns, paths
+        return initial_turns
+    
+    else:
+        return None
 
 
 
@@ -832,9 +893,9 @@ if __name__ == '__main__':
     map = Map(directory=directory)
     map.goal_position = 156
 
-    robot1 = Robot(1, '192.100.0.101', 1025, 61, 0, 'stationary', map)
-    robot2 = Robot(2, '192.100.0.102', 1026, 70, 0, 'moving', map)
-    robot3 = Robot(3, '192.100.0.103', 1027, 71, 0, 'moving', map)
+    robot1 = Robot(1, '192.100.0.101', 1025, 61, 180, 'stationary', map)
+    robot2 = Robot(2, '192.100.0.102', 1026, 89, 0, 'moving', map)
+    robot3 = Robot(3, '192.100.0.103', 1027, 90, 0, 'moving', map)
 
     # robot2 = Robot(2, '192.100.0.102', 1026, 89, 0, 'moving', map)
     # robot3 = Robot(3, '192.100.0.103', 1027, 90, 0, 'moving', map)
@@ -842,20 +903,21 @@ if __name__ == '__main__':
     robots = Robots()
     robots.add_robots([robot1, robot2, robot3])
 
-    # next_plats = [90, 71]    
+    next_plats = [42, 70]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
     # print(optimal_paths)
 
     # paths = Paths(robots, map, next_positions=[52, 42])
-    paths = Paths(robots, map)
+    paths = Paths(robots, map, next_positions=[42, 70])
 
     paths.plot_paths(robots, map)
     
+    initial_turns = paths.split_off_initial_turn()
     # commands, durations, _, final_orientations = paths_to_commands(robots, optimal_paths, map)
     
     # plt.show()
-    split_off_initial_turn(paths)
+    # initial_turns, paths = split_off_initial_turn(paths)
 
     paths.close_paths_plot()

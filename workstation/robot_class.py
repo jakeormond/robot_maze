@@ -43,6 +43,9 @@ class Robot:
     def set_new_orientation(self, new_orientation):
         self.orientation = new_orientation
 
+    def set_new_state(self, new_state):
+        self.state = new_state
+
     def __str__(self):
         return (
             f'Robot {self.id} at {self.ip_address}, port {self.port} '
@@ -66,6 +69,10 @@ class Robots:
             for key, value in robot_dict.items():
                 robot_id = value['robot_id']
                 robot = Robot.from_yaml(robot_id, robot_dict)
+                
+                if key != 'robot1':
+                    robot.set_new_state('moving')
+                
                 robots.add_robot(robot)
 
                 robot_ids.append(robot_id)
@@ -131,18 +138,21 @@ class Robots:
         return list[self.members.keys()]
     
     def update_positions(self, paths):
-        for r in self.members:
+        for r in paths.optimal_paths:
             self.members[r].set_new_position(paths.optimal_paths[r][-1])
-            self.members[r].set_new_orientation(paths.final_orientations[r])
+            self.members[r].set_new_orientation(paths.orientations[r])
         
-        stat_robot = self.get_stat_robot(self)
+        stat_robot = self.get_stat_robot()
         start_platform = stat_robot.position
         
-        positions = self.get_positions(self)
+        positions = self.get_positions()
 
         return start_platform, positions
 
-        
+    def get_robot_key_at_position(self, position):
+        for key, robot in self.members.items():
+            if robot.position == position:
+                return key
 
     
 # DON@T THINK WE NEED THIS FUNCTION, DELETE IT
@@ -181,3 +191,18 @@ def get_robot_positions(robots):
     for r in range(3):
         robot_positions.append(robots.members[f'robot{r+1}'].position)
     return robot_positions
+
+if __name__ == '__main__':
+    directory = 'D:/testFolder/pico_robots/map'
+    
+    from platform_map import Map
+    map = Map(directory=directory)
+
+    robot1 = Robot(1, '192.100.0.101', 1025, 61, 0, 'stationary', map)
+    robot2 = Robot(2, '192.100.0.102', 1026, 70, 0, 'moving', map)
+    robot3 = Robot(3, '192.100.0.103', 1027, 71, 0, 'moving', map)
+
+    robots = Robots()
+    robots.add_robots([robot1, robot2, robot3])
+
+    

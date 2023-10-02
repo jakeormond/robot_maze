@@ -18,6 +18,11 @@ from tkinter import filedialog
 import os
 import csv
 
+# CONSTANTS
+min_platform_dura_new = 2  # minimum duration animal must be on new platform to register choice
+min_platform_dura_verify = 1  # minimum duration animal must be on  platform to verify choice
+                            # after robots have made their initial turns 
+
 # create robot instances in a dictionary
 # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
 yaml_dir = 'D:/testFolder/pico_robots/yaml'
@@ -68,31 +73,111 @@ difficulty = 'hard'
 
 # MAIN LOOP
 choice_counter = 1
+start_platform = robots.members['robot1'].position
+possible_platforms = robots.get_positions()
 while True:
-    # pick next platforms and construct paths as well as commands and durations
-    paths = Paths(robots, map, choices=trial_data)
+    # if animal is at goal, we just need to move the other 2 robots away
+    if choice_counter != 1:
+        if chosen_platform == map.goal_position:
+            paths = Paths(robots, map, task='move_away')
+    else:
+        # pick next platforms and construct paths as well as commands and durations
+        paths = Paths(robots, map, choices=trial_data)
+    
     # display figure of paths
-    paths.plot_paths()
+    paths.plot_paths(robots, map)
 
     # if this is the trial start, we can send the full commands,
     # otherwise, we need to turn the robots, and then make sure 
-    # the animal hasn't changed its mind!
+    # the animal hasn't changed its mind from the last choice!
     if choice_counter != 1:
-        # split off the first paths
-        intial_turns, paths = paths.split_off_initial_turn()
+        while True:
+            # split off the first paths
+            intial_turns, paths = paths.split_off_initial_turn()
+            if intial_turns is None: # if there are no initial turns
+                break
 
-    # send commands to robots. This can return 
-    # data from the robots, but probably not necessary
-    # THIS SHOULD INCLUDE ONLY THE FIRST TURNS
-    send_over_sockets_threads(robots.get_moving_robots(), paths)
+            # send commands to robots. This can return 
+            # data from the robots, but probably not necessary
+            # THIS SHOULD INCLUDE ONLY THE FIRST TURNS
+            # robot positions are updated in this function
+            send_over_sockets_threads(robots, intial_turns)
 
-    # update robot positions and directions
-    start_platform, positions = robots.update_positions(paths)    
+            # SO WE CAN MAKE SURE THE ANIMAL DIDN'T MOVE
+            # monitor the tracking data coming from Bonsai to determine
+            # when the animal's made its decision. 
+            verified_platform = animal.find_new_platform(possible_platforms, start_platform, 
+                               platform_coordinates, crop_nums, min_platform_dura_verify)
+                       
+            if chosen_platform != verified_platform:
+                print('Animal changed its mind!')
+                print(f'new choice is platform {verified_platform}')
+                
+                # update the choice history
+                trial_data.register_choice(verified_platform, chosen_platform)
+                
+                # update robots, the stationary robot becomes moving, and the 
+                # the verified_platform robot becomes stationary
+                stat_robot_key = robots.get_key_at_position(verified_platform)
+                robots.members[stat_robot_key].set_new_state('stationary')
 
-    # SO WE CAN MAKE SURE THE ANIMAL DIDN'T MOVE
-    # monitor the tracking data coming from Bonsai to determine
-    # when the animal's made its decision. 
-    animal.find_new_platform(positions, start_platform, platform_coordinates, crop_coor)
+                non_stat_robot_key = robots.get_key_at_position(chosen_platform)
+                robots.members[non_stat_robot_key].set_new_state('moving')
+
+                # reset current_platform
+                chosen_platform = verified_platform
+
+                # recompute the paths and send the new commands
+                paths.close_paths_plot()
+                paths = Paths(robots, map, choices=trial_data)
+                paths.plot_paths()
+
+            else:
+                start_platform = verified_platform
+                break
+
+    # send the remaining commands to robots.
+    send_over_sockets_threads(robots, paths)  
+
+    # get new crop parameters
+    crop_nums = map.get_crop_nums(robots.get_positions())
+    write_bonsai_crop_params(crop_nums, directory)
+    
+    # if at the goal, then trial is done
+    if choice_counter != 1:
+        last_chosen_platform = chosen_platform
+
+        if chosen_platform == map.goal_position:
+            print('Animal reached goal!')
+            print('End of trial')
+            break
+
+    # start the choice
+    trial_data.start_choice(start_platform)
+
+    # robots are updated in the send_over_sockets_threads function
+    possible_platforms = robots.get_positions()
+
+    # get the animal's choice    
+    chosen_platform, unchosen_platform = animal.find_new_platform(possible_platforms, start_platform, 
+                               platform_coordinates, crop_nums, min_platform_dura_new)
+    trial_data.register_choice(chosen_platform, unchosen_platform)
+    
+    
+    # update robot states
+    stat_robot_key = robots.get_key_at_position(chosen_platform)
+    robots.members[stat_robot_key].set_new_state('stationary')
+
+    non_stat_robot_key = robots.get_key_at_position(last_chosen_platform)
+    robots.members[non_stat_robot_key].set_new_state('moving')
+
+    
+
+    
+
+    
+    
+    
 
 
 

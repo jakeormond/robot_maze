@@ -36,24 +36,30 @@ class Animal:
 
 
     def find_new_platform(self, possible_platforms, start_platform, 
-                            platform_coordinates, crop_coordinates):
+                            platform_coordinates, crop_coordinates, min_platform_dura):
         
         print("Finding new platform...")
 
         self._start_data_receiver(possible_platforms, start_platform, 
-                            platform_coordinates, crop_coordinates)        
+                            platform_coordinates, crop_coordinates, min_platform_dura)        
         
         self._start_manual_input_thread(possible_platforms, start_platform)
-        self._wait_for_next_platform_event()       
+        self._wait_for_next_platform_event()    
+
+        # unchosen platform is the platform that is neither the current platform
+        # nor the start platform
+        unchosen_platform = [x for x in possible_platforms if x != self.current_platform and x != start_platform][0]
+        return self.current_platform, unchosen_platform 
         
     
     def _start_data_receiver(self, possible_platforms, start_platform, 
-                            platform_coordinates, crop_coordinates):
+                            platform_coordinates, crop_coordinates, min_platform_dura):
         # Start the data receiver thread
         if self.data_receiver_thread is None or not self.data_receiver_thread.is_alive():
             self.data_receiver_thread = threading.Thread(target=self._receive_data, 
                                             args=(possible_platforms, start_platform,
-                                                    platform_coordinates, crop_coordinates))
+                                                    platform_coordinates, crop_coordinates,
+                                                    min_platform_dura))
             self.data_receiver_thread.start()
 
     def _start_manual_input_thread(self, possible_platforms, start_platform):
@@ -85,7 +91,7 @@ class Animal:
 
 
     def _receive_data(self, possible_platforms, start_platform,
-                      platform_coordinates, crop_coordinates):
+                      platform_coordinates, crop_coordinates, min_platform_dura):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             udp_socket.bind((self.host, self.port))
             
@@ -115,7 +121,7 @@ class Animal:
                                 start_time = recent_data[i][1]
                                 duration = target_time - start_time
 
-                                if duration >= MIN_PLATFORM_DURA:
+                                if duration >= min_platform_dura:
                                     new_platform = target_platform
                                     self.current_platform = new_platform
                                     self.next_platform_event.set()
@@ -326,8 +332,9 @@ if __name__ == "__main__":
     time.sleep(1)
     print('executing again')
     
-    
-    receiver.find_new_platform(possible_platforms, 61, platform_coordinates, crop_coor)
+    min_platform_dura = 2
+    receiver.find_new_platform(possible_platforms, 61, 
+                               platform_coordinates, crop_coor, min_platform_dura)
 
     current_platform = receiver.get_current_platform()
     print(current_platform)

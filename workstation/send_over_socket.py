@@ -218,8 +218,11 @@ def send_over_sockets_threads(robots, paths):
             data = data_queue.get()
             print(data)
             print("Received:", data)
-
+    
+    robots.update_positions(paths)    
     return 
+
+    
 
 
 if __name__ == '__main__':

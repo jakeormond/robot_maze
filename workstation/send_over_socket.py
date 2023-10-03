@@ -6,7 +6,7 @@ import queue
 # Define constants
 BUFFER_SIZE = 1024
 TIMEOUT = 10
-NUM_COMMANDS = 2    
+# NUM_COMMANDS = 2    
 
 def send_over_socket(string_input, HOST, PORT):
     import socket
@@ -201,7 +201,7 @@ def send_over_sockets_threads(robots, paths):
 
     num_commands = len(commands[robot_keys[0]]) # both robots should have same number of commands
 
-    for c in range(NUM_COMMANDS):
+    for c in range(num_commands):
         threads = []
         for key in robot_keys:
             t = threading.Thread(target=handle_server, 
@@ -219,7 +219,7 @@ def send_over_sockets_threads(robots, paths):
             print(data)
             print("Received:", data)
     
-    robots.update_positions(paths)    
+    # robots.update_positions(paths)    
     return 
 
     

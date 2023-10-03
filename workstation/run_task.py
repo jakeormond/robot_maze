@@ -37,11 +37,12 @@ map.set_goal_position(input('Enter goal position: '))
 with open(map_dir + '/platform_coordinates.pickle', 'rb') as handle:
     platform_coordinates = pickle.load(handle)
 
-# initialize data storage
+#initialize data storage
 trial_data = Choices()
 datetime_str = trial_data.name
 # data_dir = '/media/jake/LaCie/robot_maze_workspace'
 data_dir = 'D:/testFolder/robot_maze_behaviour'
+
 
 # save filenames for Bonsai to use and set Bonsai path
 # ask user to select directory
@@ -54,6 +55,8 @@ write_bonsai_filenames(datetime_str, directory)
 # get initial cropping parameters, and write to csv
 crop_nums = map.get_crop_nums([robots.get_stat_robot().position])
 write_bonsai_crop_params(crop_nums, directory)
+# save initial crop params to trial_data
+trial_data.save_initial_crop_params(crop_nums)
 
 # create animal instance necessary for tracking
 host = '0.0.0.0'  # server's IP address
@@ -64,8 +67,7 @@ animal = Animal(host, port, buffer_size, n)
 
 # tell user to start video, and then ephys, and then any 
 # button to start the trial
-print('Start video and ephys')
-input('\nPress any key to continue')
+input('\nStart video and ephys - press any key to continue')
 
 # set some variables
 # difficulty = 'easy'
@@ -74,18 +76,15 @@ difficulty = 'hard'
 # MAIN LOOP
 choice_counter = 1
 start_platform = robots.members['robot1'].position
+
 possible_platforms = robots.get_positions()
 while True:
     # if animal is at goal, we just need to move the other 2 robots away
-    if choice_counter != 1:
-        if chosen_platform == map.goal_position:
+    if choice_counter != 1 and chosen_platform == map.goal_position:
             paths = Paths(robots, map, task='move_away')
     else:
         # pick next platforms and construct paths as well as commands and durations
         paths = Paths(robots, map, choices=trial_data)
-    
-    # display figure of paths
-    paths.plot_paths(robots, map)
 
     # if this is the trial start, we can send the full commands,
     # otherwise, we need to turn the robots, and then make sure 
@@ -93,20 +92,21 @@ while True:
     if choice_counter != 1:
         while True:
             # split off the first paths
-            intial_turns, paths = paths.split_off_initial_turn()
-            if intial_turns is None: # if there are no initial turns
+            initial_turns = paths.split_off_initial_turn()
+            if initial_turns is None: # if there are no initial turns
                 break
 
             # send commands to robots. This can return 
             # data from the robots, but probably not necessary
             # THIS SHOULD INCLUDE ONLY THE FIRST TURNS
             # robot positions are updated in this function
-            send_over_sockets_threads(robots, intial_turns)
+            send_over_sockets_threads(robots, initial_turns)
+            robots.update_orientations(initial_turns)  
 
             # SO WE CAN MAKE SURE THE ANIMAL DIDN'T MOVE
             # monitor the tracking data coming from Bonsai to determine
             # when the animal's made its decision. 
-            verified_platform = animal.find_new_platform(possible_platforms, start_platform, 
+            verified_platform, _ = animal.find_new_platform(possible_platforms, start_platform, 
                                platform_coordinates, crop_nums, min_platform_dura_verify)
                        
             if chosen_platform != verified_platform:
@@ -118,7 +118,7 @@ while True:
                 
                 # update robots, the stationary robot becomes moving, and the 
                 # the verified_platform robot becomes stationary
-                stat_robot_key = robots.get_key_at_position(verified_platform)
+                stat_robot_key = robots.get_robot_key_at_position(verified_platform)
                 robots.members[stat_robot_key].set_new_state('stationary')
 
                 non_stat_robot_key = robots.get_key_at_position(chosen_platform)
@@ -130,30 +130,33 @@ while True:
                 # recompute the paths and send the new commands
                 paths.close_paths_plot()
                 paths = Paths(robots, map, choices=trial_data)
-                paths.plot_paths()
 
             else:
-                start_platform = verified_platform
+                
+                start_platform = chosen_platform
                 break
 
-    # send the remaining commands to robots.
-    send_over_sockets_threads(robots, paths)  
+    # plot the paths
+    paths.plot_paths(robots, map)
 
-    # get new crop parameters
-    crop_nums = map.get_crop_nums(robots.get_positions())
-    write_bonsai_crop_params(crop_nums, directory)
-    
+    # send the remaining commands to robots.
+    send_over_sockets_threads(robots, paths)
+    robots.update_positions(paths)    
+
     # if at the goal, then trial is done
     if choice_counter != 1:
-        last_chosen_platform = chosen_platform
-
         if chosen_platform == map.goal_position:
             print('Animal reached goal!')
             print('End of trial')
-            break
+            break   
 
-    # start the choice
+    # get new crop parameters
+    crop_nums = map.get_crop_nums(robots.get_positions())
+    write_bonsai_crop_params(crop_nums, directory)   
+
+    # start the choice and save crop params
     trial_data.start_choice(start_platform)
+    trial_data.save_crop_params(crop_nums)
 
     # robots are updated in the send_over_sockets_threads function
     possible_platforms = robots.get_positions()
@@ -162,33 +165,17 @@ while True:
     chosen_platform, unchosen_platform = animal.find_new_platform(possible_platforms, start_platform, 
                                platform_coordinates, crop_nums, min_platform_dura_new)
     trial_data.register_choice(chosen_platform, unchosen_platform)
-    
+    choice_counter += 1    
     
     # update robot states
-    stat_robot_key = robots.get_key_at_position(chosen_platform)
+    stat_robot_key = robots.get_robot_key_at_position(chosen_platform)
     robots.members[stat_robot_key].set_new_state('stationary')
 
-    non_stat_robot_key = robots.get_key_at_position(last_chosen_platform)
+    non_stat_robot_key = robots.get_robot_key_at_position(start_platform)
     robots.members[non_stat_robot_key].set_new_state('moving')
 
-    
-
-    
-
-    
-    
-    
-
-
-
-    
-
-
-
-
-
-
-
+    # close plot of paths
+    paths.close_paths_plot()
 
 # save the choice history to file
 trial_data.save_choices(data_dir)
@@ -198,8 +185,3 @@ trial_data.save_choices(data_dir)
 
 
 
-
-# close figure
-cp.close_paths_plot(paths_fig)
-
-delete_bonsai_csv(directory)

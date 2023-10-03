@@ -26,6 +26,8 @@ class Choices:
         # initialize number of choices to 0
         self.num_choices = 0
 
+        self.initial_crop_params = {}
+
     def start_choice(self, start_pos):
         # increment number of choices
         self.num_choices += 1
@@ -47,6 +49,18 @@ class Choices:
     def save_choices(self, data_dir):
         # save the choice history to file
         self.data.to_csv(f'{data_dir}/{self.name}.csv', index=False)
+
+    def save_crop_params(self, crop_params):
+        self.data.loc[self.num_choices, 'crop_x'] = crop_params[0]
+        self.data.loc[self.num_choices, 'crop_y'] = crop_params[1]
+        self.data.loc[self.num_choices, 'crop_width'] = crop_params[2]
+        self.data.loc[self.num_choices, 'crop_height'] = crop_params[3]
+
+    def save_initial_crop_params(self, crop_params):
+        self.initial_crop_params['crop_x'] = crop_params[0]
+        self.initial_crop_params['crop_y'] = crop_params[1]
+        self.initial_crop_params['crop_width'] = crop_params[2]
+        self.initial_crop_params['crop_height'] = crop_params[3]
         
     
 if __name__ == '__main__':

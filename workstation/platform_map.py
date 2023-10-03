@@ -278,10 +278,7 @@ class Map:
             crop_y = resolution[1] - window_size[1]
         
         return (int(crop_x), int(crop_y), window_size[0], window_size[1])
-
-
-        return get_crop_nums(robot_positions, self)
-    
+   
        
     @staticmethod
     def add_to_dir(direction1, direction2):

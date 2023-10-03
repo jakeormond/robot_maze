@@ -112,6 +112,13 @@ class Animal:
                     recent_data = self.get_data()
 
                     target_platform = recent_data[-1][0]
+                    
+                    # just continue if we can't find the animal
+                    if target_platform is None:
+                        print('\nhaving difficulty finding the animal')
+                        print('\npress s to manually register the choice')
+
+                        continue
 
                     if target_platform != start_platform:
                         recent_data = recent_data[::-1]
@@ -154,6 +161,8 @@ class Animal:
                 self._manually_select_platform(possible_platforms, start_platform)                
                 return
             time.sleep(0.1)
+        keyboard.unblock_key(trigger_key)
+
            
     def _manually_select_platform(self, possible_platforms, start_platform):
         # remove start_platform from possible_platforms
@@ -227,6 +236,7 @@ def get_current_platform(parsed_data, possible_platforms,
         distances[i] = np.sqrt((x_val - platform_coordinates[platform][0])**2 + 
                                (y_val - platform_coordinates[platform][1])**2)
 
+    
     if np.min(distances) > 100:
         current_platform = None
     
@@ -310,10 +320,10 @@ if __name__ == "__main__":
         platform_coordinates = pickle.load(handle)
 
     # crop_coordinates
-    crop_coor = (344, 204, 600, 600)  
+    crop_coor = (421, 247, 600, 600) 
 
     # possible_platforms
-    possible_platforms = [61, 70, 71]  
+    possible_platforms = [61, 80.0, 52.0] 
     
     host = '0.0.0.0'  # server's IP address
     port = 8000  # UDP port
@@ -322,7 +332,7 @@ if __name__ == "__main__":
 
     receiver = Animal(host, port, buffer_size, n)
 
-    receiver.find_new_platform(possible_platforms, 61, platform_coordinates, crop_coor)
+    receiver.find_new_platform(possible_platforms, 61, platform_coordinates, crop_coor, 1)
 
     current_platform = receiver.get_current_platform()
     print(current_platform)

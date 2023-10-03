@@ -140,7 +140,18 @@ class Robots:
     def update_positions(self, paths):
         for r in paths.optimal_paths:
             self.members[r].set_new_position(paths.optimal_paths[r][-1])
-            self.members[r].set_new_orientation(paths.orientations[r])
+            self.members[r].set_new_orientation(paths.orientations[r][-1][-1])
+        
+        stat_robot = self.get_stat_robot()
+        start_platform = stat_robot.position
+        
+        positions = self.get_positions()
+
+        return start_platform, positions
+    
+    def update_orientations(self, initial_turns):
+        for r in initial_turns.optimal_paths:
+            self.members[r].set_new_orientation(initial_turns.orientations[r][-1][-1])
         
         stat_robot = self.get_stat_robot()
         start_platform = stat_robot.position

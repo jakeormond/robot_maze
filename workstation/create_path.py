@@ -261,12 +261,12 @@ def get_next_positions(robots, map, choices, difficulty):
     # the choices.data pandas dataframe
     if choices != None:
 
-        choices.data = choices.data[choices.data['start_pos'] == stat_robot_pos]
+        choicesFromStart = choices.data[choices.data['start_pos'] == stat_robot_pos]
         # extract the chosen and unchosen positions to a numpy array and remove 
         # any repeated pairs
         n_prev_pairs = 0
-        if choices.data.empty == False:
-            previous_pairs = choices.data[['chosen_pos', 'unchosen_pos']].to_numpy()
+        if choicesFromStart.empty == False:
+            previous_pairs = choicesFromStart[['chosen_pos', 'unchosen_pos']].to_numpy()
             previous_pairs = previous_pairs.astype(int)
             for p in range(previous_pairs.shape[0]):
                 previous_pairs[p] = np.sort(previous_pairs[p])
@@ -893,9 +893,9 @@ if __name__ == '__main__':
     map = Map(directory=directory)
     map.goal_position = 156
 
-    robot1 = Robot(1, '192.100.0.101', 1025, 61, 180, 'stationary', map)
-    robot2 = Robot(2, '192.100.0.102', 1026, 89, 0, 'moving', map)
-    robot3 = Robot(3, '192.100.0.103', 1027, 90, 0, 'moving', map)
+    robot1 = Robot(1, '192.100.0.101', 1025, 89, 180, 'stationary', map)
+    robot2 = Robot(2, '192.100.0.102', 1026, 80, 0, 'moving', map)
+    robot3 = Robot(3, '192.100.0.103', 1027, 71, 0, 'moving', map)
 
     # robot2 = Robot(2, '192.100.0.102', 1026, 89, 0, 'moving', map)
     # robot3 = Robot(3, '192.100.0.103', 1027, 90, 0, 'moving', map)
@@ -903,14 +903,14 @@ if __name__ == '__main__':
     robots = Robots()
     robots.add_robots([robot1, robot2, robot3])
 
-    next_plats = [42, 70]    
+    next_plats = [80, 98]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
     # print(optimal_paths)
 
     # paths = Paths(robots, map, next_positions=[52, 42])
-    paths = Paths(robots, map, next_positions=[42, 70])
+    paths = Paths(robots, map, next_positions=next_plats)
 
     paths.plot_paths(robots, map)
     

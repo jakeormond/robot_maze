@@ -538,6 +538,15 @@ def path_to_command(robot, path, map):
       2 lines, then move forward 1 line, then turn counter-clockwise by 4 
       (i.e. 6-2) lines, then forward 2 lines'''
     
+    if len(path) == 1:
+        if path[0] == robot.position:
+            subcommands = [[0], [0], [0]]
+            command_string = int_to_string_command(subcommands)
+            # suborientations is a list of lists, where each list contains the
+            # orientation of the robot
+            suborientations = [[robot.orientation] for _ in range(3)]
+            return command_string, subcommands, suborientations
+              
     command = []
     directions = []
 
@@ -597,6 +606,16 @@ def path_to_command(robot, path, map):
     for i in range(len(subcommands)):
         subcommands[i] = [int(c) for c in subcommands[i]]
 
+    
+    if subcommands[-1][-1] > 1:
+        if len(subcommands[-2])%2 == 0:
+            subcommands[-2][-1] = subcommands[-2][-1] + \
+                (subcommands[-1][-1] - 1)
+
+        else:
+            subcommands[-2].append(subcommands[-1][-1] - 1)
+
+        subcommands[-1][-1] -= 1
     # duration = get_command_timing(subcommands, time_per_turn = 0.5, time_per_line = 1.)
 
     command_string = int_to_string_command(subcommands)
@@ -893,17 +912,18 @@ if __name__ == '__main__':
     map = Map(directory=directory)
     map.goal_position = 156
 
-    robot1 = Robot(1, '192.100.0.101', 1025, 89, 180, 'stationary', map)
-    robot2 = Robot(2, '192.100.0.102', 1026, 80, 0, 'moving', map)
-    robot3 = Robot(3, '192.100.0.103', 1027, 71, 0, 'moving', map)
+    robot1 = Robot(1, '192.168.0.102', 65535, 101, 300, 'moving', map)
+    robot2 = Robot(2, '192.168.0.103', 65534, 63, 180, 'stationary', map)
+    robot3 = Robot(3, '192.168.0.104', 65533, 82, 0, 'moving', map)
 
-    # robot2 = Robot(2, '192.100.0.102', 1026, 89, 0, 'moving', map)
-    # robot3 = Robot(3, '192.100.0.103', 1027, 90, 0, 'moving', map)
-
+   
     robots = Robots()
     robots.add_robots([robot1, robot2, robot3])
+    # yaml_dir = 'D:/testFolder/pico_robots/yaml'
+    # robots = Robots.from_yaml(yaml_dir)
 
-    next_plats = [80, 98]    
+
+    next_plats = [72, 53]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
@@ -920,4 +940,10 @@ if __name__ == '__main__':
     # plt.show()
     # initial_turns, paths = split_off_initial_turn(paths)
 
+    from send_over_socket import send_over_sockets_threads
+    send_over_sockets_threads(robots, initial_turns)
+
+    send_over_sockets_threads(robots, paths)
     paths.close_paths_plot()
+
+    robots.update_positions(paths) 

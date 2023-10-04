@@ -231,9 +231,13 @@ if __name__ == '__main__':
     import choices_class as cc
     import platform_map as mp
 
-    robot1 = robot_class.Robot(1, '192.168.0.102', 65535, 82, 180, 'moving', map)
-    robot2 = robot_class.Robot(2, '192.168.0.103', 65534, 91, 0, 'stationary', map)
-    robot3 = robot_class.Robot(3, '192.168.0.104', 65533, 92, 0, 'moving', map)
+    # robot1 = robot_class.Robot(1, '192.168.0.102', 65535, 82, 180, 'moving', map)
+    # robot2 = robot_class.Robot(2, '192.168.0.103', 65534, 91, 0, 'stationary', map)
+    # robot3 = robot_class.Robot(3, '192.168.0.104', 65533, 92, 0, 'moving', map)
+
+    robot1 = robot_class.Robot(1, '192.100.0.102', 65535, 62, 180, 'stationary', map)
+    robot2 = robot_class.Robot(2, '192.100.0.103', 65534, 52, 0, 'moving', map)
+    robot3 = robot_class.Robot(3, '192.100.0.104', 65533, 71, 0, 'moving', map)
 
     robots = robot_class.Robots()
     robots.add_robots([robot1, robot2, robot3])
@@ -243,13 +247,16 @@ if __name__ == '__main__':
     map.set_goal_position(119)
 
     # next_platforms = cp.get_next_positions(robots, map, difficulty = 'hard')
-    
-    paths = cp.Paths(robots, map)
+    next_plats = [53, 72]  
+    paths = cp.Paths(robots, map, next_positions=next_plats)
     paths.plot_paths(robots, map)
 
+    initial_turns = paths.split_off_initial_turn()
+
+    send_over_sockets_threads(robots, initial_turns)
     send_over_sockets_threads(robots, paths)
 
-
+    paths.close_paths_plot()
     # send_over_socket('99, 3', "192.168.0.102", 65535)    
     # send_over_socket('99, 3', "192.168.0.103", 65534)    
     # send_over_socket('99, 3', "192.168.0.104", 65533)    

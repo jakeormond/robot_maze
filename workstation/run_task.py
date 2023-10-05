@@ -121,7 +121,7 @@ while True:
                 stat_robot_key = robots.get_robot_key_at_position(verified_platform)
                 robots.members[stat_robot_key].set_new_state('stationary')
 
-                non_stat_robot_key = robots.get_key_at_position(chosen_platform)
+                non_stat_robot_key = robots.get_robot_key_at_position(chosen_platform)
                 robots.members[non_stat_robot_key].set_new_state('moving')
 
                 # reset current_platform

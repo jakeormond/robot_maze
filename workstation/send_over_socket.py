@@ -231,13 +231,9 @@ if __name__ == '__main__':
     import choices_class as cc
     import platform_map as mp
 
-    # robot1 = robot_class.Robot(1, '192.168.0.102', 65535, 82, 180, 'moving', map)
-    # robot2 = robot_class.Robot(2, '192.168.0.103', 65534, 91, 0, 'stationary', map)
-    # robot3 = robot_class.Robot(3, '192.168.0.104', 65533, 92, 0, 'moving', map)
-
-    robot1 = robot_class.Robot(1, '192.100.0.102', 65535, 62, 180, 'stationary', map)
-    robot2 = robot_class.Robot(2, '192.100.0.103', 65534, 52, 0, 'moving', map)
-    robot3 = robot_class.Robot(3, '192.100.0.104', 65533, 71, 0, 'moving', map)
+    robot1 = robot_class.Robot(1, '192.168.0.102', 65535, 62, 180, 'stationary', map)
+    robot2 = robot_class.Robot(2, '192.168.0.103', 65534, 52, 0, 'moving', map)
+    robot3 = robot_class.Robot(3, '192.168.0.104', 65533, 71, 0, 'moving', map)
 
     robots = robot_class.Robots()
     robots.add_robots([robot1, robot2, robot3])

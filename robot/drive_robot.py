@@ -36,8 +36,6 @@ INITIAL_TURN_SPEED = 10
 INITIAL_STRAIGHT_SPEED = 15
 MAX_TURN_SPEED = 30
 MIN_SPEED = 20
-TYPICAL_TURN_DIST = 120
-MAX_TURN_DIST = 145
 
 DIST_TURN = 120 # this will need adjusting
 DIST_LINE = 2000
@@ -181,7 +179,7 @@ def drive_straight(online_flag, speed1, speed2): # drive straight along line, ad
 
 def drive_forward_by_distance(distance, conn=None):
     
-    send_msg_over_socket('FWD DISTANCE = ' + str(distance), conn)
+    # send_msg_over_socket('FWD DISTANCE = ' + str(distance), conn)
     
     enc1_a, enc2_a = reset_encoders()
     
@@ -201,16 +199,16 @@ def drive_forward_by_distance(distance, conn=None):
 
 def find_line_half_on(conn=None): # to move the second sensor over line when one sensor already over
     
-    send_msg_over_socket('find_line_half_on', conn)
+    # send_msg_over_socket('find_line_half_on', conn)
         
     # first, make sure we're not already on the line
     online_flag = check_online()
     if online_flag == 3:
-        send_msg_over_socket('we''re already on the line!', conn)
+        # send_msg_over_socket('we''re already on the line!', conn)
         return
     
     if online_flag == 0:
-        send_msg_over_socket('not on line!', conn)
+        # send_msg_over_socket('not on line!', conn)
         return
         
         
@@ -228,11 +226,11 @@ def find_line_half_on(conn=None): # to move the second sensor over line when one
         
         if online_flag == 3:
             # found the line
-            send_msg_over_socket('found line!', conn)
+            # send_msg_over_socket('found line!', conn)
             break
         
         elif online_flag == 0:
-            send_msg_over_socket('lost the line!', conn)
+            # send_msg_over_socket('lost the line!', conn)
             break
     
     drive_basic(0, 0)
@@ -240,12 +238,12 @@ def find_line_half_on(conn=None): # to move the second sensor over line when one
 
 def find_line_back_and_forth(conn=None):
     
-    send_msg_over_socket('find_line_back_and_forth', conn)
+    # send_msg_over_socket('find_line_back_and_forth', conn)
     
     # first, make sure we're not already on the line
     online_flag = check_online()
     if online_flag != 0:
-        send_msg_over_socket('we''re already on the line!', conn)
+        # send_msg_over_socket('we''re already on the line!', conn)
         return
     
     direction = 1    
@@ -266,7 +264,7 @@ def find_line_back_and_forth(conn=None):
         # check if online
         online_flag = check_online()
         if online_flag != 0:
-            send_msg_over_socket('found the line', conn)
+            # send_msg_over_socket('found the line', conn)
                         
             if online_flag != 3:
                 find_line_half_on(conn)           
@@ -294,16 +292,16 @@ def find_line_back_and_forth(conn=None):
 def linear_drive(n_lines, conn=None):
     # line distance ~= 150, gap ~= 50
     
-    send_msg_over_socket('LINEAR DRIVE', conn) 
+    # send_msg_over_socket('LINEAR DRIVE', conn) 
     
     if n_lines == 0:
-        send_msg_over_socket('n_lines = 0 so returning', conn)
+        # send_msg_over_socket('n_lines = 0 so returning', conn)
         return [], [], [], []
        
     # check if over the line, and straighten out if necessary
     online_flag = check_online() # 0 not on line, 1 left sensor on line, 2 right sensor on line, 3 both sensors on line
     if online_flag == 0:
-        send_msg_over_socket('trying to find line', conn) 
+        # send_msg_over_socket('trying to find line', conn) 
         drive_forward_by_distance(40, conn)
         find_line_back_and_forth(conn)        
     
@@ -377,10 +375,10 @@ def linear_drive(n_lines, conn=None):
             
             enc1, enc2 = reset_encoders()
             
-            send_msg_over_socket('back on the line', conn)
+            # send_msg_over_socket('back on the line', conn)
             
             if lines_traversed == n_lines:          
-                send_msg_over_socket('breaking', conn)
+                # send_msg_over_socket('breaking', conn)
                 drive_basic(0, 0)
                 break
             
@@ -391,11 +389,11 @@ def linear_drive(n_lines, conn=None):
             
             enc1, enc2 = reset_encoders()            
             
-            send_msg_over_socket('off the line', conn)
+            # send_msg_over_socket('off the line', conn)
             
         elif online_flag == 0 and online and max(distance1, distance2) < 150:
             online_flag = last_online_flag          
-            send_msg_over_socket('off the line before gap - trying to find', conn)
+            # send_msg_over_socket('off the line before gap - trying to find', conn)
         
     return line_distances1, line_distances2, gap_distances1, gap_distances2
    
@@ -418,12 +416,12 @@ def turn_in_place(n_lines, conn=None):
     distance = DIST_TURN * n_lines
     turn_by_distance(distance, direction, conn)
     
-    # check if on line
+    # check if on line    
     online_flag = check_online() # 0 not on line, 1 left sensor on line, 2 right sensor on line, 3 both sensors on line
     if online_flag == 3: # on the line      
         send_msg_over_socket('on the line', conn)
     
-    elif online_flag > 0: # get centred by turning slightly to the right
+    elif online_flag > 0: # get centred 
         send_msg_over_socket('half on', conn)
         find_line_half_on(conn)
 
@@ -439,6 +437,8 @@ def turn_in_place(n_lines, conn=None):
 
 
 def turn_by_distance(distance, direction, conn=None): # direction == 1 for clockwise, -1 for counterclockwise
+    # updated on Oct 5, 2023: now, the robot starts looking for the line at
+    # some distance before the target distance, and stops if it finds it. 
     
     send_msg_over_socket('TURN_BY_DIST', conn)
          
@@ -453,11 +453,19 @@ def turn_by_distance(distance, direction, conn=None): # direction == 1 for clock
 
     # main loop
     counter = 0
+    
+    # check if online
+    last_flag = check_online()
+    
+    # set line counter
+    line_count = 0
+    
     while True:
         counter += 1
         
         distance1, distance2 = calculate_distance(enc1, enc2)
         
+        # acceleration and deceleration
         if min(distance1, distance2) < (distance - 100):
             if speed < MAX_TURN_SPEED:
                 # accelerate
@@ -467,10 +475,35 @@ def turn_by_distance(distance, direction, conn=None): # direction == 1 for clock
             # decelerate
             speed -= 1            
         
+        # count the lines - we're not currently using this
+        # count, but we may need to in the future. 
+        online_flag = check_online()
+        if online_flag == 0 and last_flag != 0:
+            line_count += 1
+            send_msg_over_socket(f'line_count = {line_count}', conn)
+        last_flag = online_flag
+        
+        
+        
+        # look for the line at some distance before target -
+        # we'll try 1/5 the inter-line distance to start
+        if min(distance1, distance2) > (distance - int(1/5*(DIST_TURN))):
+            online_flag = check_online()
+            if online_flag == 3:
+                drive_basic(0, 0)
+                break
+            
+            elif direction == 1 and online_flag == 1:
+                drive_basic(0, 0)
+                break
+        
+            elif direction == -1 and online_flag == 2:
+                drive_basic(0, 0)
+                break
+                    
         if min(distance1, distance2) > distance:
             drive_basic(0, 0)
-            break
-          
+            break          
         
         round_speed = round(speed)
         drive_for_turn(round_speed, direction)                   

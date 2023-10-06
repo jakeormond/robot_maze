@@ -94,6 +94,8 @@ while True:
             # split off the first paths
             initial_turns = paths.split_off_initial_turn()
             if initial_turns is None: # if there are no initial turns
+                # set the start platform to the chosen platform
+                start_platform = chosen_platform
                 break
 
             # send commands to robots. This can return 
@@ -132,9 +134,23 @@ while True:
                 paths = Paths(robots, map, choices=trial_data)
 
             else:
-                
+                print(f'Animal chose platform {int(verified_platform)}')
                 start_platform = chosen_platform
                 break
+
+    # CHECKING FOR BUGS
+    if verified_platform != chosen_platform:
+        print('ERROR: verified platform does not match chosen platform')
+        # pause execution
+        input('Set a breakpoint, then press any key to continue')
+
+    stat_robot = robots.get_stat_robot()
+    # if stat_robot is an integer, then there is either 0 or more than one stationary robot
+    if type(stat_robot) == int:
+        print('ERROR: there are {stat_robot} stationary robots, but there should be only 1')
+        # pause execution
+        input('Set a breakpoint, then press any key to continue')
+    # CHECKING FOR BUGS
 
     # plot the paths
     paths.plot_paths(robots, map)
@@ -158,12 +174,18 @@ while True:
     trial_data.start_choice(start_platform)
     trial_data.save_crop_params(crop_nums)
 
-    # robots are updated in the send_over_sockets_threads function
+    # get the possible platforms
     possible_platforms = robots.get_positions()
+    print(f'Start platform is {start_platform}')
+    # choice platforms are the possible platforms minus the start platform
+    choice_platforms = possible_platforms.copy()
+    choice_platforms.remove(start_platform)
+    print(f'Choice platforms are {int(choice_platforms[0])} and {int(choice_platforms[1])}')
 
     # get the animal's choice    
     chosen_platform, unchosen_platform = animal.find_new_platform(possible_platforms, start_platform, 
                                platform_coordinates, crop_nums, min_platform_dura_new)
+    print(f'Animal chose platform {int(chosen_platform)}')
     trial_data.register_choice(chosen_platform, unchosen_platform)
     choice_counter += 1    
     

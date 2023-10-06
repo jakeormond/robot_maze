@@ -2,6 +2,7 @@ import socket
 import select
 import threading
 import queue
+import time
 
 # Define constants
 BUFFER_SIZE = 1024
@@ -147,19 +148,27 @@ def handle_server(robot, string_input, data_queue):
             return 
    
     received_data = []
-    while True:
-        data = s.recv(BUFFER_SIZE)  # Receive data from server
+    while True:        
+        # EXCEPTION RAISED HERE - HOST CLOSES CONNECTION
+        # NEED TO DEAL WITH THIS
 
-        # check if data is empty
-        if not data:
-            break
-            
-        data = data.decode('utf8')
-        # split data on comma
-        data = data.split(',')
-        # check is any elements are empty and remove them
-        data = [x for x in data if x != '']
-        received_data.extend(data)
+        try:
+            data = s.recv(BUFFER_SIZE)  # Receive data from server
+
+            # check if data is empty
+            if not data:
+                break
+                
+            data = data.decode('utf8')
+            # split data on comma
+            data = data.split(',')
+            # check is any elements are empty and remove them
+            data = [x for x in data if x != '']
+            received_data.extend(data)
+        except ConnectionResetError:
+            # handle the exception (e.g. log an error message)
+            time.sleep(1)  # wait a bit
+            pass  # continue the loop if recv() fails
     
 
     data_with_identifier = {'robot_id': robot.id, 

@@ -120,6 +120,15 @@ class Robots:
         return orientations
 
     def get_stat_robot(self):
+        # check how many robots are stationary
+        n_stationary = 0
+        for r in self.members:
+            if self.members[r].state == 'stationary':
+                n_stationary += 1
+        if n_stationary != 1:
+            print(f'found {n_stationary} stationary robots, should be 1')
+            return n_stationary
+
         for r in self.members:
             if self.members[r].state == 'stationary':
                 return self.members[r]

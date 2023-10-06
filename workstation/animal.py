@@ -169,6 +169,8 @@ class Animal:
         # make a copy of possible_platforms
         choice_platforms = possible_platforms.copy()
         choice_platforms.remove(start_platform)
+        print(f'\nStart platform is {start_platform}')
+        print(f'\nPossible platforms are {choice_platforms[0]} and {choice_platforms[1]}')
         print("Manually select platform from the following options (press 1 or 2):")
         print(f"platforms 1: {choice_platforms[0]}, 2: {choice_platforms[1]}")
         while True:

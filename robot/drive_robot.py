@@ -37,7 +37,7 @@ INITIAL_STRAIGHT_SPEED = 15
 MAX_TURN_SPEED = 30
 MIN_SPEED = 20
 
-DIST_TURN = 120 # this will need adjusting
+DIST_TURN = 115 # this will need adjusting
 DIST_LINE = 2000
 SLOWING_DIST = 500 # distance at which to start slowing
 MODE = 1

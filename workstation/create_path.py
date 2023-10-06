@@ -449,9 +449,11 @@ def select_optimal_paths(paths, robots, next_plats, map):
     2) can't start or finish on the same platform or occupy the same position
     at the same time step, 
     
-    Oct 10, 2023: inserting 3) robots that are initially adjacent can't move to
+    Oct 5, 2023: inserting 3) robots that are initially adjacent can't move to
     another position where they are still adjacent (as the chances of them 
     hitting each other are too high) 
+    Oct 4, 2023: need to be more stringent, can't have robots becoming adjacent either, 
+    except at the end
 
     4) and should have the shortest possible length, 
     measured as the length of the longer of the two paths. 
@@ -514,8 +516,36 @@ def select_optimal_paths(paths, robots, next_plats, map):
 
                         # 3) robots that are initially adjacent can't move to adjacent positions
                         # if start1 and start2 are adjacent, check if first path positions are adjacent
+                        if path1[0] == 110 and path2[0] == 92:
+                            jake = 0
+                        
+                        
                         if map.check_robots_adjacent(robots) and \
                             map.check_adjacent(path1[0], path2[0]):
+                            break
+
+                        adj_counter = 0
+                        break_flag = False
+                        for s in range(max_path_length):
+                            if s >= min_path_length:
+                                if len(path1) == min_path_length:
+                                    path1_plat = path1[-1]
+                                    path2_plat = path2[s]
+                                else:
+                                    path1_plat = path1[s]
+                                    path2_plat = path2[-1]
+                            else:
+                                path1_plat = path1[s]
+                                path2_plat = path2[s]
+                                                        
+                            
+                            if path1_plat == path2_plat:
+                                break_flag = True
+                                break
+                            elif map.check_adjacent(path1_plat, path2_plat):
+                                adj_counter += 1                            
+
+                        if break_flag or adj_counter > 1:
                             break
 
                         # 4) should have the shortest possible length
@@ -930,9 +960,9 @@ if __name__ == '__main__':
     map = Map(directory=directory)
     map.goal_position = 156
 
-    robot1 = Robot(1, '192.168.0.102', 65535, 156, 0, 'stationary', map)
-    robot2 = Robot(2, '192.168.0.103', 65534, 137, 0, 'moving', map)
-    robot3 = Robot(3, '192.168.0.104', 65533, 118, 0, 'moving', map)
+    robot1 = Robot(1, '192.168.0.102', 65535, 139, 0, 'stationary', map)
+    robot2 = Robot(2, '192.168.0.103', 65534, 120, 0, 'moving', map)
+    robot3 = Robot(3, '192.168.0.104', 65533, 101, 0, 'moving', map)
 
    
     robots = Robots()
@@ -941,7 +971,7 @@ if __name__ == '__main__':
     # robots = Robots.from_yaml(yaml_dir)
 
 
-    next_plats = [147, 166]    
+    next_plats = [148, 129]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)

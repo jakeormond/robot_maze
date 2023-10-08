@@ -310,9 +310,7 @@ def delete_bonsai_csv(directory):
         file = f + '_FileName.csv'
         os.remove(os.path.join(directory, file))
 
-
-
-       
+     
 if __name__ == "__main__":
     
     # for testing

@@ -5,13 +5,13 @@ Note that the cropping parameters are sent to Bonsai by csv file; we don't
 need to delete the csv file, as this is handled by Bonsai after reading it.
 '''
 
-from configurations import read_yaml
-from robot_class import Robot, Robots
-from create_path import Paths
-from choices_class import Choices
-import platform_map as mp
-from send_over_socket import send_over_sockets_threads
-from animal import Animal, write_bonsai_filenames, write_bonsai_crop_params, delete_bonsai_csv
+# from honeycomb_task.configuration import read_yaml
+from honeycomb_task.robot import Robots
+from honeycomb_task.create_path import Paths
+from honeycomb_task.choices import Choices
+from honeycomb_task.platform_map import Map
+from honeycomb_task.send_over_socket import send_over_sockets_threads
+from honeycomb_task.animal import Animal, write_bonsai_filenames, write_bonsai_crop_params, delete_bonsai_csv
 import pickle
 import tkinter as tk
 from tkinter import filedialog
@@ -31,10 +31,10 @@ robots = Robots.from_yaml(yaml_dir)
 # load map and set goal position
 # platform coordinates are also stored in the map object
 map_dir = 'D:/testFolder/pico_robots/map'
-map = mp.Map(directory=map_dir)
+map = Map(directory=map_dir)
 map.set_goal_position(input('Enter goal position: '))
 
-with open(map_dir + '/platform_coordinates.pickle', 'rb') as handle:
+with open(map_dir + '/platform_coordinates.pickle', 'rb') as handle: # MAYBE I SHOULD ADD PLATFORM_COORDINATES TO MAP CLASS?????
     platform_coordinates = pickle.load(handle)
 
 #initialize data storage

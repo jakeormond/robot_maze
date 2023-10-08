@@ -36,6 +36,15 @@ def create_yaml():
     }
     return
 
+def save_yaml(data, yaml_dir=None):
+    if yaml_dir is None:
+        # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
+        yaml_dir = 'D:/testFolder/pico_robots/yaml'
+    os.chdir(yaml_dir)
+
+    with open('config.yaml', 'w') as yaml_file:
+        yaml.dump(data, yaml_file, default_flow_style=False)
+
 def read_yaml(yaml_dir):
     # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
     yaml_path = os.path.join(yaml_dir, 'config.yaml')

@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     crop_coordinates = crop_platform_images(virgin_files)
 
-    # if crop_corrdinates.pickle already exists, load it
+    # if crop_coordinates.pickle already exists, load it
     if os.path.isfile(image_path + '/crop_coordinates.pickle'):
         with open(image_path + '/crop_coordinates.pickle', 'rb') as handle:
             crop_coordinates_og = pickle.load(handle)

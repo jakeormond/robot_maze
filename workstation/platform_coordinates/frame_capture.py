@@ -1,6 +1,5 @@
 '''
 take a jpeg image using the imaging source camera.
-NOTE: this code has not been tested on the lab camera!!!
 '''
 import cv2
 import os

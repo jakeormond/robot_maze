@@ -50,7 +50,7 @@ def send_over_socket(string_input, HOST, PORT):
 
     return received_data
             
-
+''' untested code for sending over sockets using select'''
 def send_over_sockets_select(robots, paths):
       
     # get commands

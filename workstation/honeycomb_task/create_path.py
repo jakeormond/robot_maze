@@ -7,9 +7,9 @@ the shortest path, a path that avoids other robots or obstacles, etc.
 import numpy as np
 import copy
 import os
-from robot_class import Robot, Robots 
-import platform_map as pm
-from platform_map import Map
+# from robot_class import Robot, Robots 
+# import platform_map as pm
+# from platform_map import Map
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import time

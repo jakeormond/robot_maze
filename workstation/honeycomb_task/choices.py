@@ -64,6 +64,7 @@ class Choices:
         
     
 if __name__ == '__main__':
+    # TESTING    
     from time import sleep
     choices = Choices()
     sleep(1)

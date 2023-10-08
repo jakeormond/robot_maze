@@ -12,9 +12,9 @@ multiple robots at once)
 
 import socket
 from typing import Any
-from configurations import read_yaml
+from configuration import read_yaml
 from tkinter import filedialog
-import platform_map as mp
+# import platform_map as mp
 import copy
 
 

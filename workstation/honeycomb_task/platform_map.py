@@ -1,10 +1,9 @@
 ''' 
 Generates the platform map required by the robots. The map is a numpy array
 and is saved in a .csv file. 
-Note that this code was translated from Matlab using Copilot in August, 2023; it may 
-contain bugs that might be revealed if maze geometry is changed, so use caution!
-Also, note that the current maze has n_rows = 26 and n_cols = [9, 10].
-Finally, note that because the map contains nan values, it is a float array, not an int array.
+Note that the current maze has n_rows = 26 and n_cols = [9, 10].
+Also, note that because the map contains nan values, we have to use floats to 
+number the platforms, not integers.
 '''
 import numpy as np
 import os

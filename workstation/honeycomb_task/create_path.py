@@ -668,37 +668,8 @@ def path_to_command(robot, path, map):
 
     command_string = int_to_string_command(subcommands)
 
-    # final_orientation = direction
-    # final_orientation = directions[-1]
-
-    # return command_string, duration, subcommands, final_orientation
     return command_string, subcommands, suborientations
 
-# def get_command_timing(command, time_per_turn = 0.5, time_per_line = 1.):
-
-#     ''' returns the timing of the command in seconds. The timing is based on the estimated 
-#     cumulative time it takes the robots to execute the movements in the command. 
-#     In the future, this should be replaced with a more accurate timing based on empirical
-#     tests of the robots '''
-
-#     # determine how many lists are in command
-#     n_lists = len(command)
-
-#     # calculate duration of each sub-command
-#     duration = [0] * n_lists
-
-#     for i in range(n_lists):
-#         for i2, c in enumerate(command[i]):
-#             if i2 == 0 and c == 0 and (len(command[i]) == 1 or command[i][i2+1] == 0):
-#                 duration[i] += 1
-            
-#             if i2%2 == 0:
-#                 duration[i] += c * time_per_turn
-#             else:
-#                 if i2%2 == 1:
-#                     duration[i] += c * time_per_line
-    
-#     return duration
 
 def int_to_string_command(command):
     ''' converts the command from a list of integers to a string that can be 
@@ -785,51 +756,6 @@ def split_off_initial_turn(paths):
         return None
 
 
-
-
-# def paths_to_commands(robots, paths, map, time_per_turn = 0.5, time_per_line = 1.):
-#     ''' converts the paths in paths to commands that can be sent to the robots.
-#      The commands take the form of a series of turns and linear movements: 
-#       e.g. the command [2,1,4,2] would tell the robot to turn clockwise by
-#       2 lines, then move forward 1 line, then turn counter-clockwise by 4 
-#       (i.e. 6-2) lines, then forward 2 lines'''
-    
-#     # get the moving robots
-#     moving_robots = robots.get_moving_robots()
-#     robot_list = list(moving_robots.members.keys())
-
-#     commands = {}
-#     durations = {}
-#     command_strings = {}
-#     final_orientations = {}
-
-#     # loop through each robot and convert its path to a series of commands
-#     for key, path in paths.items():
-#         command_string, duration, command, orientation = path_to_command(moving_robots.members[key], path, map, time_per_turn, time_per_line) 
-#         commands[key] = command       
-#         durations[key] = duration
-#         command_strings[key] = command_string
-#         final_orientations[key] = orientation
-    
-
-#     # check if the robots both have any zero commands before 
-#     # they start moving (i.e. if they are already in the correct positions)
-    
-    
-#     while True:
-#         if commands[robot_list[0]][0] == [0] and commands[robot_list[1]][0] == [0]:
-#             for key in commands.keys():
-#                 # remove the first command from each list
-#                 command_strings[key] = command_strings[key][1:]
-#                 durations[key] = durations[key][1:]
-#                 commands[key] = commands[key][1:]
-#         else:
-#             break
-            
-#     return command_strings, durations, commands, final_orientations
-
-
-
 def plot_paths(map, robots, optimal_paths):
     ''' plots the paths in optimal_paths on the map. '''
        
@@ -869,25 +795,6 @@ def plot_paths(map, robots, optimal_paths):
             platforms[1].append(p)
             draw_platform(map, p, ax[1], color=color)
 
-    # set axis limits and reverse y axis
-    # x_min = None
-    # x_max = None
-    # y_min = None
-    # y_max = None
-
-    # platforms_all = platforms[0] + platforms[1]
-    # for p in platforms_all:
-    #     plat_pos = map.cartesian_position(p)
-    #     if x_min == None or plat_pos[0] < x_min:
-    #         x_min = plat_pos[0]
-    #     if x_max == None or plat_pos[0] > x_max:
-    #         x_max = plat_pos[0]
-    #     if y_min == None or plat_pos[1] < y_min:
-    #         y_min = plat_pos[1]
-    #     if y_max == None or plat_pos[1] > y_max:
-    #         y_max = plat_pos[1]
-
-    
     stat_cart_pos = map.cartesian_position(stat_robot_pos)
     axis_half_width = 5
     x_min = stat_cart_pos[0] - axis_half_width
@@ -954,15 +861,21 @@ def draw_platform(map, pos, ax, color='r'):
 
 if __name__ == '__main__':
     # directory = '/media/jake/LaCie/robot_maze_workspace'
-    directory = 'D:/testFolder/pico_robots/map'
+    # directory = 'D:/testFolder/pico_robots/map'
+    directory = 'C:/Users/Jake/Documents/robot_maze'
     # directory = 'C:/Users/Jake/Desktop/map_of_platforms'
     # map = platform_map.open_map(map='restricted_map', directory=directory)
+    
+    from platform_map import Map 
+    
     map = Map(directory=directory)
-    map.goal_position = 156
+    map.goal_position = 72
 
-    robot1 = Robot(1, '192.168.0.102', 65535, 139, 0, 'stationary', map)
-    robot2 = Robot(2, '192.168.0.103', 65534, 120, 0, 'moving', map)
-    robot3 = Robot(3, '192.168.0.104', 65533, 101, 0, 'moving', map)
+    from robot import Robot, Robots 
+
+    robot1 = Robot(1, '192.168.0.102', 65535, 82, 0, 'stationary', map)
+    robot2 = Robot(2, '192.168.0.103', 65534, 73, 0, 'moving', map)
+    robot3 = Robot(3, '192.168.0.104', 65533, 92, 0, 'moving', map)
 
    
     robots = Robots()
@@ -971,11 +884,15 @@ if __name__ == '__main__':
     # robots = Robots.from_yaml(yaml_dir)
 
 
-    next_plats = [148, 129]    
+    #  next_plats = [148, 129]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
     # print(optimal_paths)
+
+
+    next_pos = get_next_positions(robots, map, None, 'hard')
+    print(next_pos)
 
     # paths = Paths(robots, map, next_positions=[52, 42])
     paths = Paths(robots, map, next_positions=next_plats)

@@ -95,7 +95,9 @@ while True:
             initial_turns = paths.split_off_initial_turn()
             if initial_turns is None: # if there are no initial turns
                 # set the start platform to the chosen platform
+                print('no initial turns')
                 start_platform = chosen_platform
+                verified_platform = chosen_platform
                 break
 
             # send commands to robots. This can return 
@@ -139,7 +141,7 @@ while True:
                 break
 
     # CHECKING FOR BUGS
-    if verified_platform != chosen_platform:
+    if choice_counter != 1 and verified_platform != chosen_platform:
         print('ERROR: verified platform does not match chosen platform')
         # pause execution
         input('Set a breakpoint, then press any key to continue')

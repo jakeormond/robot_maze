@@ -13,15 +13,21 @@ from honeycomb_task.platform_map import Map
 from honeycomb_task.send_over_socket import send_over_sockets_threads
 from honeycomb_task.animal import Animal, write_bonsai_filenames, write_bonsai_crop_params, delete_bonsai_csv
 import pickle
-import tkinter as tk
-from tkinter import filedialog
 import os
-import csv
 
 # CONSTANTS
 min_platform_dura_new = 2  # minimum duration animal must be on new platform to register choice
 min_platform_dura_verify = 1  # minimum duration animal must be on  platform to verify choice
                             # after robots have made their initial turns 
+
+# top level folder
+top_dir = 'D:/testFolder/'
+
+# ask user to enter the animal numnber
+animal_num = input('Enter animal number: ')
+# data should be stored in a folder with the animal number, i.e. 'Rat_XX'
+data_dir = os.path.join(top_dir, f'Rat_{animal_num}')
+
 
 # create robot instances in a dictionary
 # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'

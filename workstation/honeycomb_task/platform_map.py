@@ -216,7 +216,7 @@ class Map:
         col_dist = cartesian_pos1[0] - cartesian_pos2[0]
         row_dist = cartesian_pos1[1] - cartesian_pos2[1]
 
-        return np.sqrt(row_dist**2 + col_dist**2)
+        return np.round(np.sqrt(row_dist**2 + col_dist**2), 1)
     
     def cartesian_position(self, position):
         row_unit_dist = 1
@@ -673,20 +673,20 @@ def save_map(filename, map, directory=None):
 if __name__ == '__main__':
     directory = "/media/jake/LaCie/robot_maze_workspace"
     
-    # map = Map(26, [9, 10])
-    # map.restrict_map(41, 217, extra_row=1)
+    map = Map(26, [9, 10])
+    map.restrict_map(41, 217, extra_row=1)
 
-    lab_dir = 'D:/testFolder/pico_robots/map'
+    # lab_dir = 'D:/testFolder/pico_robots/map'
     
-    map = Map(directory=lab_dir)
+    # map = Map(directory=lab_dir)
 
     # map.save_map(lab_dir)
 
 
     # map = Map(directory=directory)
         
-    # map.save_map()
-    position = 164
+    map.save_map()
+    # position = 164
     # print(f'indices of position {position} = {map.get_indices_of_postion(position)}')      
     
     # axes = map.get_axes(position)

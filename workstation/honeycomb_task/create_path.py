@@ -287,6 +287,16 @@ def get_next_positions(robots, map, choices, difficulty):
     # randomly reorder possible_pairs
     np.random.shuffle(possible_pairs)
 
+    # if stat_robot_pos is adjacent to the goal, then we need to make sure that
+    # the next positions include the goal. 
+    if map.check_adjacent(stat_robot_pos, map.goal_position):
+        # find the first pair that includes the goal
+        for p in possible_pairs:
+            if p[0] == map.goal_position or p[1] == map.goal_position:
+                next_positions = p
+                return p
+
+
     # loop through the pairs, breaking if a pair satisfies the difficulty
     # criteria
     next_positions = None

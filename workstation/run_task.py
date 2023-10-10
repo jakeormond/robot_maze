@@ -92,7 +92,7 @@ while True:
         # concatenate trial data to the previous choices for the day
         previous_choices.data = pd.concat([previous_choices.data, trial_data.data], ignore_index=True)
         # pick next platforms and construct paths as well as commands and durations
-        paths = Paths(robots, map, choices=trial_data)
+        paths = Paths(robots, map, choices=previous_choices)
 
     # if this is the trial start, we can send the full commands,
     # otherwise, we need to turn the robots, and then make sure 

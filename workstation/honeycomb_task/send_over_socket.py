@@ -80,6 +80,9 @@ def handle_server(robot, string_input, data_queue):
             return 
    
     received_data = []
+    max_retries = 3
+    base_delay = 1  # Initial delay in seconds
+    retry_counter = 0
     while True:        
         # EXCEPTION RAISED HERE - HOST CLOSES CONNECTION
         # NEED TO DEAL WITH THIS
@@ -98,10 +101,12 @@ def handle_server(robot, string_input, data_queue):
             data = [x for x in data if x != '']
             received_data.extend(data)
         except ConnectionResetError:
+            if retry_counter > max_retries:
+                break
+           
             # handle the exception (e.g. log an error message)
-            time.sleep(1)  # wait a bit
-            pass  # continue the loop if recv() fails
-    
+            time.sleep(base_delay * (2**retry_counter))  # wait a bit            
+            retry_counter += 1
 
     data_with_identifier = {'robot_id': robot.id, 
                             'data': received_data}

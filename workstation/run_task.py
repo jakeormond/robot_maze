@@ -13,15 +13,33 @@ from honeycomb_task.platform_map import Map
 from honeycomb_task.send_over_socket import send_over_sockets_threads
 from honeycomb_task.animal import Animal, write_bonsai_filenames, write_bonsai_crop_params, delete_bonsai_csv
 import pickle
-import tkinter as tk
-from tkinter import filedialog
 import os
-import csv
+import datetime
+import pandas as pd
 
 # CONSTANTS
 min_platform_dura_new = 2  # minimum duration animal must be on new platform to register choice
 min_platform_dura_verify = 1  # minimum duration animal must be on  platform to verify choice
                             # after robots have made their initial turns 
+
+# top level folder
+top_dir = 'D:/testFolder'
+
+# ask user to enter the animal numnber
+animal_num = input('Enter animal number: ')
+# get the date without the time
+datetime_str = datetime.datetime.now().strftime('%Y-%m-%d')
+# create folder if it doesn't yet exist
+data_dir = os.path.join(top_dir, 'robot_maze_behaviour', f'Rat_{animal_num}', datetime_str)
+# if any of these nested folders don't exist, create them
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
+
+# load previous choices
+previous_choices = Choices(directory=data_dir)   
+# initialize new data storage
+trial_data = Choices()
+datetime_str = trial_data.name
 
 # create robot instances in a dictionary
 # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
@@ -37,24 +55,12 @@ map.set_goal_position(input('Enter goal position: '))
 with open(map_dir + '/platform_coordinates.pickle', 'rb') as handle: # MAYBE I SHOULD ADD PLATFORM_COORDINATES TO MAP CLASS?????
     platform_coordinates = pickle.load(handle)
 
-#initialize data storage
-trial_data = Choices()
-datetime_str = trial_data.name
-# data_dir = '/media/jake/LaCie/robot_maze_workspace'
-data_dir = 'D:/testFolder/robot_maze_behaviour'
-
-
 # save filenames for Bonsai to use and set Bonsai path
-# ask user to select directory
-# root = tk.Tk()
-# root.withdraw()
-# directory = filedialog.askdirectory(title='Select Bonsai directory')
-directory = 'D:/testFolder'
-write_bonsai_filenames(datetime_str, directory)
+write_bonsai_filenames(datetime_str, top_dir)
 
 # get initial cropping parameters, and write to csv
 crop_nums = map.get_crop_nums([robots.get_stat_robot().position])
-write_bonsai_crop_params(crop_nums, directory)
+write_bonsai_crop_params(crop_nums, top_dir)
 # save initial crop params to trial_data
 trial_data.save_initial_crop_params(crop_nums)
 
@@ -83,8 +89,10 @@ while True:
     if choice_counter != 1 and chosen_platform == map.goal_position:
             paths = Paths(robots, map, task='move_away')
     else:
+        # concatenate trial data to the previous choices for the day
+        previous_choices.data = pd.concat([previous_choices.data, trial_data.data], ignore_index=True)
         # pick next platforms and construct paths as well as commands and durations
-        paths = Paths(robots, map, choices=trial_data)
+        paths = Paths(robots, map, choices=previous_choices)
 
     # if this is the trial start, we can send the full commands,
     # otherwise, we need to turn the robots, and then make sure 
@@ -170,7 +178,7 @@ while True:
 
     # get new crop parameters
     crop_nums = map.get_crop_nums(robots.get_positions())
-    write_bonsai_crop_params(crop_nums, directory)   
+    write_bonsai_crop_params(crop_nums, top_dir)   
 
     # start the choice and save crop params
     trial_data.start_choice(start_platform)

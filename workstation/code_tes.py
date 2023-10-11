@@ -875,12 +875,12 @@ if __name__ == '__main__':
     # directory = 'C:/Users/Jake/Desktop/map_of_platforms'
     # map = platform_map.open_map(map='restricted_map', directory=directory)
     
-    from platform_map import Map 
+    from honeycomb_task.platform_map import Map 
     
     map = Map(directory=directory)
     map.goal_position = 178
 
-    from robot import Robot, Robots 
+    from honeycomb_task.robot import Robot, Robots 
 
     robot1 = Robot(1, '192.168.0.102', 65535, 159, 0, 'stationary', map)
     robot2 = Robot(2, '192.168.0.103', 65534, 121, 0, 'moving', map)

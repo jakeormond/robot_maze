@@ -101,8 +101,8 @@ class Map:
     def get_ring_around_position(self, position, ring_order):
         return get_ring(position, self, ring_order)
 
-    def get_rings_around_position(self, position, ring_order=3):
-        return get_rings(position, self, ring_order)
+    # def get_rings_around_position(self, position, ring_order=3):
+    #    return get_rings(position, self, ring_order)
 
     def find_shortest_distance(self, position1, position2): 
         '''Simply find the order of the ring around position1
@@ -673,7 +673,7 @@ def save_map(filename, map, directory=None):
 if __name__ == '__main__':
     directory = "/media/jake/LaCie/robot_maze_workspace"
     
-    map = Map(26, [9, 10])
+    map = Map(28, [9, 10]) # was 26, [9, 10]
     map.restrict_map(41, 217, extra_row=1)
 
     # lab_dir = 'D:/testFolder/pico_robots/map'

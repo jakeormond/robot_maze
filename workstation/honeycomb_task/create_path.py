@@ -887,9 +887,9 @@ if __name__ == '__main__':
 
     from robot import Robot, Robots 
 
-    robot1 = Robot(1, '192.168.0.102', 65535, 159, 0, 'stationary', map)
-    robot2 = Robot(2, '192.168.0.103', 65534, 121, 0, 'moving', map)
-    robot3 = Robot(3, '192.168.0.104', 65533, 140, 0, 'moving', map)
+    robot1 = Robot(1, '192.168.0.102', 65535, 81, 0, 'stationary', map)
+    robot2 = Robot(2, '192.168.0.103', 65534, 100, 0, 'moving', map)
+    robot3 = Robot(3, '192.168.0.104', 65533, 110, 0, 'moving', map)
 
    
     robots = Robots()
@@ -898,15 +898,15 @@ if __name__ == '__main__':
     # robots = Robots.from_yaml(yaml_dir)
 
 
-    #  next_plats = [148, 129]    
+    next_plats = [71, 72]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
     # print(optimal_paths)
 
 
-    next_pos = get_next_positions(robots, map, None, 'hard')
-    print(next_pos)
+    # next_plats = get_next_positions(robots, map, None, 'hard')
+    # print(next_plats)
 
     # paths = Paths(robots, map, next_positions=[52, 42])
     paths = Paths(robots, map, next_positions=next_plats)

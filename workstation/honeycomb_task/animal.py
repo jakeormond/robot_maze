@@ -145,6 +145,8 @@ class Animal:
                     # Handle other exceptions here
                     print(f"Error: {e}")
                     # You can add more specific error handling or logging here
+                
+                time.sleep(0.1)  # Sleep for 100ms to prevent high CPU usage
 
    
     
@@ -185,6 +187,7 @@ class Animal:
             else:
                 print("Invalid input. Please try again.")
                 print(f"platforms 1: {choice_platforms[0]}, 2: {choice_platforms[1]}")
+                
     
        
     def _store_data(self, data):

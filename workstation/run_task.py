@@ -45,7 +45,7 @@ datetime_str = trial_data.name
 # create robot instances in a dictionary
 # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
 yaml_dir = 'D:/testFolder/pico_robots/yaml'
-robots = Robots.from_yaml(yaml_dir)
+robots = Robots.from_yaml(yaml_dir, orientations=[0, 0, 0])
 
 # load map and set goal position
 # platform coordinates are also stored in the map object
@@ -148,20 +148,6 @@ while True:
                 print(f'Animal chose platform {int(verified_platform)}')
                 start_platform = chosen_platform
                 break
-
-    # CHECKING FOR BUGS
-    if choice_counter != 1 and verified_platform != chosen_platform:
-        print('ERROR: verified platform does not match chosen platform')
-        # pause execution
-        input('Set a breakpoint, then press any key to continue')
-
-    stat_robot = robots.get_stat_robot()
-    # if stat_robot is an integer, then there is either 0 or more than one stationary robot
-    if type(stat_robot) == int:
-        print('ERROR: there are {stat_robot} stationary robots, but there should be only 1')
-        # pause execution
-        input('Set a breakpoint, then press any key to continue')
-    # CHECKING FOR BUGS
 
     # plot the paths
     paths.plot_paths(robots, map)

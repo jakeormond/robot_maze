@@ -28,15 +28,27 @@ def move_tracking_files(animal_num=None, starting_dir=None, destination_dir=None
     files = os.listdir(starting_dir)
 
     # find video files begin with 'video_' and end with '.avi'
-    video_files = [f for f in files if re.match(r'video_\d+.avi', f)]
+    video_files = [f for f in files if re.match(r'video_\d{4}-\d{2}-\d{2}_\d{2}\.\d{2}\.\d{2}\.avi', f)]
 
     # csv files begin with: 'videoTS_', 'cropTimes_', 'cropValues_', 
     # 'pulseTS_', 'dlcOut_', and end with '.csv'
-    csv_files = [f for f in files if re.match(r'(videoTS_|cropTimes_|cropValues_|pulseTS_|dlcOut_)\d+.csv', f)]
+    csv_files = [f for f in files if re.match(r'(videoTS_|cropTS_|cropValues_|pulseTS_|dlcOut_)\d{4}-\d{2}-\d{2}_\d{2}\.\d{2}\.\d{2}\.csv', f)]
      
-     # in the destination directory, create a folder for the video files 
+     # in the destination directory, create a folder for the video and csv files 
      # if it hasn't already been created
-    if not os.path.exists(os.path.join(destination_dir, 'video_files')):
-        os.mkdir(os.path.join(destination_dir, 'video_files'))
+    folder_name = 'video_and_csv_files'
+    if not os.path.exists(os.path.join(destination_dir, folder_name)):
+        os.mkdir(os.path.join(destination_dir, folder_name))
+
+    # move the video files to the destination directory
+    for f in video_files:
+        shutil.move(os.path.join(starting_dir, f), os.path.join(destination_dir, folder_name))
+    
+    # move the csv files to the destination directory
+    for f in csv_files:
+        shutil.move(os.path.join(starting_dir, f), os.path.join(destination_dir, folder_name))
+
+    # remove the file date_and_time.csv from the starting directory
+    os.remove(os.path.join(starting_dir, 'date_and_time.csv'))
 
 

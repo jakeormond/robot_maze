@@ -45,6 +45,8 @@ def send_over_socket(string_input, HOST, PORT):
             # append to received data
             received_data.extend(data)
 
+            time.sleep(0.1) # not sure if this necessary or not
+
     # print received data
     print(received_data)
 
@@ -84,9 +86,7 @@ def handle_server(robot, string_input, data_queue):
     base_delay = 1  # Initial delay in seconds
     retry_counter = 0
     while True:        
-        # EXCEPTION RAISED HERE - HOST CLOSES CONNECTION
-        # NEED TO DEAL WITH THIS
-
+        
         try:
             data = s.recv(BUFFER_SIZE)  # Receive data from server
 
@@ -100,6 +100,7 @@ def handle_server(robot, string_input, data_queue):
             # check is any elements are empty and remove them
             data = [x for x in data if x != '']
             received_data.extend(data)
+
         except ConnectionResetError:
             if retry_counter > max_retries:
                 break
@@ -107,6 +108,8 @@ def handle_server(robot, string_input, data_queue):
             # handle the exception (e.g. log an error message)
             time.sleep(base_delay * (2**retry_counter))  # wait a bit            
             retry_counter += 1
+
+        time.sleep(0.1) # not sure if this necessary or not
 
     data_with_identifier = {'robot_id': robot.id, 
                             'data': received_data}
@@ -137,7 +140,7 @@ def send_over_sockets_serial(robots, paths, ordered_keys):
 
     return 
 
-def send_over_sockets_threads(robots, paths):
+def send_over_sockets_threads(robots, paths, print_output=False):
      # get commands
     commands = paths.command_strings
     # get robot keys
@@ -162,8 +165,11 @@ def send_over_sockets_threads(robots, paths):
 
         while not data_queue.empty():
             data = data_queue.get()
-            print(data)
-            print("Received:", data)
+            # print(data)
+            if print_output:
+                 print("Received:", data)
+
+            time.sleep(0.1)
     
     # robots.update_positions(paths)    
     return 

@@ -464,7 +464,11 @@ def select_optimal_paths(paths, robots, next_plats, map):
     Oct 4, 2023: need to be more stringent, can't have robots becoming adjacent either, 
     except at the end
 
-    4) and should have the shortest possible length, 
+    4) robots shouldn't follow each other, even with a gap of 1 (that being said, 
+    such paths probably won't meet all the other criteria anyways, and I think were
+    only occurring because of bugs - Jake 2023-10-12)
+
+    5) and should have the shortest possible length, 
     measured as the length of the longer of the two paths. 
     
     '''

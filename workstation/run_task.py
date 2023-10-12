@@ -11,7 +11,8 @@ from honeycomb_task.create_path import Paths
 from honeycomb_task.choices import Choices
 from honeycomb_task.platform_map import Map
 from honeycomb_task.send_over_socket import send_over_sockets_threads
-from honeycomb_task.animal import Animal, write_bonsai_filenames, write_bonsai_crop_params, delete_bonsai_csv
+from honeycomb_task.animal import Animal, write_date_and_time, write_bonsai_crop_params
+from honeycomb_task.move_tracking_files import move_tracking_files
 import pickle
 import os
 import datetime
@@ -56,7 +57,7 @@ with open(map_dir + '/platform_coordinates.pickle', 'rb') as handle: # MAYBE I S
     platform_coordinates = pickle.load(handle)
 
 # save filenames for Bonsai to use and set Bonsai path
-write_bonsai_filenames(datetime_str, top_dir)
+write_date_and_time(datetime_str, top_dir)
 
 # get initial cropping parameters, and write to csv
 crop_nums = map.get_crop_nums([robots.get_stat_robot().position])
@@ -73,7 +74,7 @@ animal = Animal(host, port, buffer_size, n)
 
 # tell user to start video, and then ephys, and then any 
 # button to start the trial
-input('\nStart video and ephys - press any key to continue')
+input('\nStart video - press any key to continue')
 
 # set some variables
 # difficulty = 'easy'
@@ -212,8 +213,7 @@ while True:
 # save the choice history to file
 trial_data.save_choices(data_dir)
 
+input('stop video - press any key to continue')
 
-
-
-
-
+move_tracking_files(animal_num=animal_num, starting_dir=top_dir, \
+                     destination_dir=data_dir)

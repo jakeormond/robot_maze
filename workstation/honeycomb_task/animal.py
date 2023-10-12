@@ -248,6 +248,12 @@ def get_current_platform(parsed_data, possible_platforms,
     
     return current_platform
 
+def write_data_and_time(datetime_str, directory):
+    videofile_name = 'data_and_time.csv'
+    filepath = os.path.join(directory, videofile_name)
+    with open(filepath, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([datetime_str])
 
 def write_bonsai_filenames(datetime_str, directory):
     ''' these are the names of the files that Bonsai will

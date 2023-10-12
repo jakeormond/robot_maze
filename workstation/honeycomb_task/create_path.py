@@ -525,13 +525,10 @@ def select_optimal_paths(paths, robots, next_plats, map):
 
                         # 3) robots that are initially adjacent can't move to adjacent positions
                         # if start1 and start2 are adjacent, check if first path positions are adjacent
-                        if path1[0] == 110 and path2[0] == 92:
-                            jake = 0
-                        
                         
                         if map.check_robots_adjacent(robots) and \
                             map.check_adjacent(path1[0], path2[0]):
-                            break
+                            continue
 
                         adj_counter = 0
                         break_flag = False
@@ -555,12 +552,20 @@ def select_optimal_paths(paths, robots, next_plats, map):
                                 adj_counter += 1                            
 
                         if break_flag or adj_counter > 1:
-                            break
+                            continue
 
-                        # 4) should have the shortest possible length
+                        # 4) if one robot is following the other, even with a gap of 1 platform,
+                        # there is the potential for the following robot to hit the leading robot 
                         path1_length = len(path1)
                         path2_length = len(path2)
-                        
+                        if path1_length > 2 and path2_length > 2:
+                            distance = []
+                            for pos in range(2):
+                                distance.append(map.find_shortest_distance(path1[pos], path2[pos]))
+                            if distance[0] <= 2 and distance[1] <= 2:
+                                continue 
+
+                        # 5) should have the shortest possible length                      
                         if (shortest_path_length == None and longest_path_length == None) or \
                             (max_path_length < longest_path_length) or \
                                 (max_path_length == max_path_length and \
@@ -882,9 +887,9 @@ if __name__ == '__main__':
 
     from robot import Robot, Robots 
 
-    robot1 = Robot(1, '192.168.0.102', 65535, 159, 0, 'stationary', map)
-    robot2 = Robot(2, '192.168.0.103', 65534, 121, 0, 'moving', map)
-    robot3 = Robot(3, '192.168.0.104', 65533, 140, 0, 'moving', map)
+    robot1 = Robot(1, '192.168.0.102', 65535, 81, 0, 'stationary', map)
+    robot2 = Robot(2, '192.168.0.103', 65534, 100, 0, 'moving', map)
+    robot3 = Robot(3, '192.168.0.104', 65533, 110, 0, 'moving', map)
 
    
     robots = Robots()
@@ -893,15 +898,15 @@ if __name__ == '__main__':
     # robots = Robots.from_yaml(yaml_dir)
 
 
-    #  next_plats = [148, 129]    
+    next_plats = [71, 72]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
     # print(optimal_paths)
 
 
-    next_pos = get_next_positions(robots, map, None, 'hard')
-    print(next_pos)
+    # next_plats = get_next_positions(robots, map, None, 'hard')
+    # print(next_plats)
 
     # paths = Paths(robots, map, next_positions=[52, 42])
     paths = Paths(robots, map, next_positions=next_plats)

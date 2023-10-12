@@ -248,8 +248,8 @@ def get_current_platform(parsed_data, possible_platforms,
     
     return current_platform
 
-def write_data_and_time(datetime_str, directory):
-    videofile_name = 'data_and_time.csv'
+def write_date_and_time(datetime_str, directory):
+    videofile_name = 'date_and_time.csv'
     filepath = os.path.join(directory, videofile_name)
     with open(filepath, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)

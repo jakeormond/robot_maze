@@ -146,7 +146,7 @@ class Animal:
                     print(f"Error: {e}")
                     # You can add more specific error handling or logging here
                 
-                time.sleep(0.1)  # Sleep for 100ms to prevent high CPU usage
+                time.sleep(0.01)  # Sleep for 100ms to prevent high CPU usage
 
    
     

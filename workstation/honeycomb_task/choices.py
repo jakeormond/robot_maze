@@ -5,7 +5,6 @@ will be saved to file.
 '''
 
 import pandas as pd
-import numpy as np
 import datetime as dt
 import os
 
@@ -83,8 +82,6 @@ class Choices:
         else:
             csv_dfs = [pd.read_csv(f'{data_dir}/{csv_file}') for csv_file in csv_files]
             return pd.concat(csv_dfs, ignore_index=True)
-
-
         
     
 if __name__ == '__main__':

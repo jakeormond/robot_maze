@@ -1,5 +1,4 @@
 import socket
-import select
 import threading
 import queue
 import time

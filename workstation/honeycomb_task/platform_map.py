@@ -11,7 +11,6 @@ import tkinter as tk
 from tkinter import filedialog
 import copy
 import pickle
-# from robot_class import Robots
 
 # map definition
 class Map:
@@ -283,8 +282,7 @@ class Map:
         if crop_y + window_size[1] > resolution[1]:
             crop_y = resolution[1] - window_size[1]
         
-        return (int(crop_x), int(crop_y), window_size[0], window_size[1])
-   
+        return (int(crop_x), int(crop_y), window_size[0], window_size[1])   
        
     @staticmethod
     def add_to_dir(direction1, direction2):
@@ -294,7 +292,6 @@ class Map:
         elif new_direction < 0:
             new_direction = new_direction + 360
         return new_direction
-
 
 
 def generate_map(n_rows, n_cols, directory=None):
@@ -333,6 +330,7 @@ def generate_map(n_rows, n_cols, directory=None):
                 platform_map[i, 0::2] = n_cols*(i) + np.arange(1, n_cols+1)
 
     return platform_map
+
 
 def get_axes(position, map):
 
@@ -387,6 +385,7 @@ def get_axes(position, map):
     
     return axes
 
+
 def straight_path(position1, position2, map):
     axes = map.get_axes(position1)
     
@@ -422,6 +421,7 @@ def straight_path(position1, position2, map):
         path = axis[ind1:ind2+1]
     
     return path
+
 
 def find_shortest_paths(position1, position2, map):
 
@@ -516,7 +516,6 @@ def find_shortest_paths(position1, position2, map):
     return paths
 
 
-
 def get_ring(position, map, ring_order):
     axes = get_axes(position, map)
     axes_names = ['vert', 'ne', 'nw']
@@ -563,6 +562,7 @@ def get_ring(position, map, ring_order):
 
     return ring
 
+
 def get_rings(position, map, ring_order=3):
     '''  note that currently, if the position is too close to the maze edge,
     the 3rd order ring will have some gaps; currently, this shouldn't 
@@ -573,6 +573,7 @@ def get_rings(position, map, ring_order=3):
         rings[str(r)] = map.get_ring(position, r)
     
     return rings
+
 
 def find_shortest_distance(position1, position2, map):
     '''Simply find the order of the ring around position1
@@ -589,6 +590,7 @@ def find_shortest_distance(position1, position2, map):
         if position2 in ring:
             return distance
    
+
 def open_map(map_type=None, directory=None):
     if directory is None:
         # ask user to select directory from gui
@@ -607,6 +609,7 @@ def open_map(map_type=None, directory=None):
 
     return platform_map
 
+
 def open_platform_coordinates(directory=None):
     if directory is None:
         # ask user to select directory from gui
@@ -619,6 +622,7 @@ def open_platform_coordinates(directory=None):
         platform_coordinates = pickle.load(handle)
     
     return platform_coordinates
+
 
 def get_rows_and_cols_to_exclude(platform_map, start_platform, stop_platform, extra_row):
     # find the row and column indices of the start and stop platforms, returned as integers
@@ -667,6 +671,7 @@ def restrict_map(platform_map, start_platform, stop_platform, extra_row=0):
     
     return restricted_map, excluded_plats
 
+
 def save_map(filename, map, directory=None):
     if directory is None:
         # ask user to select directory from gui
@@ -678,6 +683,7 @@ def save_map(filename, map, directory=None):
     np.savetxt(filepath, map, delimiter=',')
     
     return directory
+
 
 if __name__ == '__main__':
     directory = "/media/jake/LaCie/robot_maze_workspace"

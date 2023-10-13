@@ -10,13 +10,13 @@ fixed later if necessary by adding in an intial up_down_direction variable
 down and to the side).
 '''
 import numpy as np
-from configurations import read_yaml
-from robot_class import Robot, Robots
-from platform_map import Map
+from honeycomb_task.configurations import read_yaml
+from honeycomb_task.robot_class import Robot, Robots
+from honeycomb_task.platform_map import Map
 from frame_capture import capture_frame
-from create_path import Paths
+from honeycomb_task.create_path import Paths
 # from send_over_socket import send_over_sockets_threads
-from send_over_socket import send_over_sockets_serial
+from honeycomb_task.send_over_socket import send_over_sockets_serial
 from tkinter import filedialog
 from time import sleep
 

@@ -12,7 +12,7 @@ from honeycomb_task.choices import Choices
 from honeycomb_task.platform_map import Map
 from honeycomb_task.send_over_socket import send_over_sockets_threads
 from honeycomb_task.animal import Animal, write_date_and_time, write_bonsai_crop_params
-from honeycomb_task.move_tracking_files import move_tracking_files
+from honeycomb_task.move_tracking_files import move_tracking_files, remove_file
 import pickle
 import os
 import datetime
@@ -203,3 +203,4 @@ input('stop video - press any key to continue')
 
 move_tracking_files(animal_num=animal_num, starting_dir=top_dir, \
                      destination_dir=data_dir)
+remove_file(top_dir, 'time_and_date.csv')

@@ -12,9 +12,8 @@ multiple robots at once)
 
 import socket
 from typing import Any
-from  honeycomb_task.configuration import read_yaml
+from honeycomb_task.configuration import read_yaml
 from tkinter import filedialog
-# import platform_map as mp
 import copy
 
 
@@ -49,7 +48,8 @@ class Robot:
     def __str__(self):
         return (
             f'Robot {self.id} at {self.ip_address}, port {self.port} '
-            f'is at position {self.position} and orientation {self.orientation}.'
+            f'is at position {self.position} and orientation {self.orientation},'
+            f' and in the {self.state} state.'
         )
 
 class Robots:
@@ -173,36 +173,11 @@ class Robots:
         for key, robot in self.members.items():
             if robot.position == position:
                 return key
-
     
-# DON@T THINK WE NEED THIS FUNCTION, DELETE IT
-def initialize_robots_as_dict(yaml_dir=None, positions=None, orientations=None):
-    
-    # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
-    if yaml_dir is None:
-        # ask user to select directory from gui
-        yaml_dir = filedialog.askdirectory()
-
-
-    robot_init = read_yaml(yaml_dir)
-
-    robots = {}
-
-    for r in range(3):
-        robots[f'robot{r+1}'] = Robot.from_yaml(r+1, robot_init[f'robot{r+1}'])
-
-        if positions is None:
-            # ask user for new position and orientation
-            robots[f'robot{r+1}'].set_new_position(input('Enter new position: '))
-            robots[f'robot{r+1}'].set_new_orientation(input('Enter new orientation (0, 60, 120, 180, 240, 300): '))
-
-        else:
-            robots[f'robot{r+1}'].set_new_position(positions[r])
-            robots[f'robot{r+1}'].set_new_orientation(orientations[r])
-
-    return robots
-
-
+    def __str__(self):
+        for r in self.members:
+            print(self.members[r])
+        return ''
 
 
 def get_robot_positions(robots):
@@ -212,9 +187,10 @@ def get_robot_positions(robots):
         robot_positions.append(robots.members[f'robot{r+1}'].position)
     return robot_positions
 
+
 if __name__ == '__main__':
-    directory = 'D:/testFolder/pico_robots/map'
-    
+    # directory = 'D:/testFolder/pico_robots/map'
+    directory = 'C:/Users/Jake/Documents/robot_maze/python_code/robot_maze/workstation/map_files'
     from platform_map import Map
     map = Map(directory=directory)
 
@@ -224,5 +200,5 @@ if __name__ == '__main__':
 
     robots = Robots()
     robots.add_robots([robot1, robot2, robot3])
-
+    print(robots)
     

@@ -5,7 +5,6 @@ The original code feature argument parsing, not used here.
 
 '''
 # import the necessary packages
-import argparse
 import numpy as np
 import cv2
 import os

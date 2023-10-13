@@ -149,7 +149,6 @@ class Animal:
                 time.sleep(0.01)  # Sleep for 100ms to prevent high CPU usage
 
    
-    
     def _listen_for_key(self, possible_platforms, start_platform):      
         trigger_key = 's'
         # Enter the blocking mode to suppress key events
@@ -187,8 +186,7 @@ class Animal:
             else:
                 print("Invalid input. Please try again.")
                 print(f"platforms 1: {choice_platforms[0]}, 2: {choice_platforms[1]}")
-                
-    
+                    
        
     def _store_data(self, data):
         # Add the new data point to the buffer
@@ -345,7 +343,6 @@ if __name__ == "__main__":
 
     current_platform = receiver.get_current_platform()
     print(current_platform)
-    print(current_platform)
 
     print('sleeping')
     time.sleep(1)
@@ -356,5 +353,4 @@ if __name__ == "__main__":
                                platform_coordinates, crop_coor, min_platform_dura)
 
     current_platform = receiver.get_current_platform()
-    print(current_platform)
     print(current_platform)

@@ -6,13 +6,9 @@ the shortest path, a path that avoids other robots or obstacles, etc.
 '''
 import numpy as np
 import copy
-import os
-# from robot_class import Robot, Robots 
-# import platform_map as pm
 from honeycomb_task.platform_map import Map
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import time
 
 
 # CreatePath should take a start and end position, and optionally a 
@@ -239,12 +235,11 @@ def get_next_positions(robots, map, choices, difficulty):
     ''' identify the stationary robot, and pseudo-randomly
     pick the next two positions for the moving robots, such that 
     previous options are avoided if possible. '''
-
-    # get stationary robot
+    
+    # get all possible pairs
+    # get first order ring around stationary robot
     stat_robot = robots.get_stat_robot()
     stat_robot_pos = stat_robot.position
-
-    # get first order ring around stationary robot
     possible_targets = np.sort(map.get_ring_around_position(stat_robot_pos, 1))
     # remove positions that are in excluded_positions
     excluded_positions = map.excluded_plats
@@ -258,11 +253,43 @@ def get_next_positions(robots, map, choices, difficulty):
         for i2 in range(i+1, len(possible_targets)):
             possible_pairs[pair_ind] = [possible_targets[i], possible_targets[i2]]
             pair_ind += 1
+
+
+    # remove pairs that don't satisfy distance criteria
+    # get stationary robot's distance to goal    
+    stat_dist = map.cartesian_distance(stat_robot_pos, map.goal_position)
+    # loop through each pair, removing pairs where neither member has shorter
+    # distance to goal than stat_robot_pos
+    row = 0
+    n_possible_pairs = possible_pairs.shape[0]
+    while row < n_possible_pairs:
+        p = possible_pairs[row,:]
+        p0_dist = map.cartesian_distance(p[0], map.goal_position)
+        p1_dist = map.cartesian_distance(p[1], map.goal_position)
+
+        if difficulty == 'hard':
+            if p0_dist >= stat_dist and p1_dist >= stat_dist:
+                # delete row from possible_pairs
+                possible_pairs = np.delete(possible_pairs, row, axis=0)
+                n_possible_pairs -= 1
+            else:
+                row += 1
+
+        if difficulty == 'easy':
+            if (p0_dist > stat_dist or p1_dist > stat_dist) or \
+                    (p0_dist == stat_dist and p1_dist == stat_dist) or \
+                         ((p0_dist == stat_dist or p1_dist == stat_dist) \
+                          and not map.check_adjacent(stat_robot_pos, map.goal_position)):
+                                # delete row from possible_pairs
+                possible_pairs = np.delete(possible_pairs, row, axis=0)
+                n_possible_pairs -= 1
+            else:
+                row += 1
+
     
     # find what, if any, choices have previously been made from stat_robot_pos using 
     # the choices.data pandas dataframe
     if choices != None:
-
         choicesFromStart = choices.data[choices.data['start_pos'] == stat_robot_pos]
         # extract the chosen and unchosen positions to a numpy array and remove 
         # any repeated pairs
@@ -284,52 +311,12 @@ def get_next_positions(robots, map, choices, difficulty):
                         # delete row from possible_pairs
                         possible_pairs = np.delete(possible_pairs, row_ind, axis=0)
     
-    # randomly reorder possible_pairs
+    # randomly reorder possible_pairs and select next positions
     np.random.shuffle(possible_pairs)
+    next_positions = possible_pairs[0]    
 
-    # if stat_robot_pos is adjacent to the goal, then we need to make sure that
-    # the next positions include the goal. 
-    if map.check_adjacent(stat_robot_pos, map.goal_position):
-        # find the first pair that includes the goal
-        for p in possible_pairs:
-            if p[0] == map.goal_position or p[1] == map.goal_position:
-                next_positions = p
-                return p
-
-    # loop through the pairs, breaking if a pair satisfies the difficulty
-    # criteria
-    next_positions = None
-    while_counter = 0
-    while next_positions is None:
-        for p in possible_pairs:
-            # get cartesian distance from stat_robot_pos
-            stat_dist = map.cartesian_distance(stat_robot_pos, map.goal_position)
-
-            # get cartesian distance from p[0] and p[1]
-            p0_dist = map.cartesian_distance(p[0], map.goal_position)
-            p1_dist = map.cartesian_distance(p[1], map.goal_position)
-
-            if difficulty == 'hard':  
-                if while_counter == 0:
-                    if p0_dist < stat_dist or p1_dist < stat_dist:
-                        next_positions = p
-                        break
-                    else:
-                        if p0_dist == stat_dist or p1_dist == stat_dist:
-                            next_positions = p
-                            break           
-            
-            else:
-                if while_counter == 0:
-                    if p0_dist < stat_dist and p1_dist < stat_dist:
-                        next_positions = p
-                        break
-                else:
-                    if p0_dist < stat_dist or p1_dist < stat_dist:
-                        next_positions = p
-                        break
-    
     return next_positions
+
 
 def get_direct_paths(robots, next_plats, map):
     # get moving robots
@@ -496,7 +483,6 @@ def select_optimal_paths(paths, robots, next_plats, map):
 
         start2 = robots.members[moving_robot_ids[1]].position
         paths2 = paths[moving_robot_ids[1]][f'to_plat{p2}']
-
         
 
         for path1_both_dir in paths1.values():
@@ -587,6 +573,7 @@ def select_optimal_paths(paths, robots, next_plats, map):
         
     return optimal_paths
 
+
 def construct_paths(robots, next_plats, map):
     # get all possible paths
     all_paths = get_all_paths(robots, next_plats, map)
@@ -595,6 +582,7 @@ def construct_paths(robots, next_plats, map):
     optimal_paths = select_optimal_paths(all_paths, robots, next_plats, map)
 
     return optimal_paths
+
 
 # def path_to_command(robot, path, map, time_per_turn, time_per_line):
 def path_to_command(robot, path, map):
@@ -848,17 +836,14 @@ def plot_paths(map, robots, optimal_paths):
     fig.canvas.manager.window.wm_attributes('-topmost', 1)
     plt.show(block=False)
 
-
     # return the figure handle
     return fig
 
 def close_paths_plot(fig):
-    import matplotlib.pyplot as plt
     plt.close(fig)
 
 def draw_platform(map, pos, ax, color='r'):
     ''' draws a platform on the map '''
-    import matplotlib.patches as patches
 
     plat_pos = map.cartesian_position(pos)
 
@@ -875,9 +860,9 @@ def draw_platform(map, pos, ax, color='r'):
 
     return hexagon
 
-   
 
 if __name__ == '__main__':
+    # __package__ = "honeycomb_task"
     # directory = '/media/jake/LaCie/robot_maze_workspace'
     # directory = 'D:/testFolder/pico_robots/map'
     directory = 'C:/Users/Jake/Documents/robot_maze'
@@ -885,13 +870,13 @@ if __name__ == '__main__':
     # map = platform_map.open_map(map='restricted_map', directory=directory)
     
     map = Map(directory=directory)
-    map.goal_position = 72
+    map.goal_position = 146
 
     from robot import Robot, Robots 
 
-    robot1 = Robot(1, '192.168.0.102', 65535, 72, 0, 'moving', map)
-    robot2 = Robot(2, '192.168.0.103', 65534, 52, 180, 'stationary', map)
-    robot3 = Robot(3, '192.168.0.104', 65533, 62, 300, 'moving', map)
+    robot1 = Robot(1, '192.168.0.102', 65535, 155, 0, 'stationary', map)
+    robot2 = Robot(2, '192.168.0.103', 65534, 136, 180, 'moving', map)
+    robot3 = Robot(3, '192.168.0.104', 65533, 127, 300, 'moving', map)
 
    
     robots = Robots()
@@ -900,14 +885,14 @@ if __name__ == '__main__':
     # robots = Robots.from_yaml(yaml_dir)
 
 
-    next_plats = [43, 61]    
+    # next_plats = [43, 61]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
     # print(optimal_paths)
 
 
-    # next_plats = get_next_positions(robots, map, None, 'hard')
+    next_plats = get_next_positions(robots, map, None, 'hard')
     # print(next_plats)
 
     # paths = Paths(robots, map, next_positions=[52, 42])

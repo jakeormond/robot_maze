@@ -125,8 +125,15 @@ class Map:
         to determine if we need to move the moving robots away from the
         stationary robot first, before sending them on their paths.'''
 
-        distance = self.find_shortest_distance(position1, position2)
-        if distance == 1:
+        # distance = self.find_shortest_distance(position1, position2)
+        # if distance == 1:
+        #    return True
+        # else:
+        #   return False
+
+        # check if position2 is in position1's ring
+        ring = self.get_ring_around_position(position1, 1)
+        if position2 in ring:
             return True
         else:
             return False
@@ -508,6 +515,8 @@ def find_shortest_paths(position1, position2, map):
 
     return paths
 
+
+
 def get_ring(position, map, ring_order):
     axes = get_axes(position, map)
     axes_names = ['vert', 'ne', 'nw']
@@ -676,6 +685,8 @@ if __name__ == '__main__':
     map = Map(28, [9, 10]) # was 26, [9, 10]
     map.restrict_map(41, 217, extra_row=1)
 
+    ring = get_ring(53, map, 3)
+    
     # lab_dir = 'D:/testFolder/pico_robots/map'
     
     # map = Map(directory=lab_dir)

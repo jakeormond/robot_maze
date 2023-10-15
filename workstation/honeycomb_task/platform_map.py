@@ -686,30 +686,11 @@ def save_map(filename, map, directory=None):
 
 
 if __name__ == '__main__':
-    directory = "/media/jake/LaCie/robot_maze_workspace"
+
+    # directory = "/media/jake/LaCie/robot_maze_workspace"
     
-    map = Map(28, [9, 10]) # was 26, [9, 10]
+    map = Map(28, [9, 10]) 
     map.restrict_map(41, 217, extra_row=1)
 
-    ring = get_ring(53, map, 3)
-    
-    # lab_dir = 'D:/testFolder/pico_robots/map'
-    
-    # map = Map(directory=lab_dir)
-
-    # map.save_map(lab_dir)
-
-
-    # map = Map(directory=directory)
-        
+    ring = get_ring(53, map, 3)       
     map.save_map()
-    # position = 164
-    # print(f'indices of position {position} = {map.get_indices_of_postion(position)}')      
-    
-    # axes = map.get_axes(position)
-
-    # rings = map.get_rings_around_position(position)
-      
-    # straight_path(166, 164, map)
-
-    # direction = map.get_direction_from_to(166, 185)

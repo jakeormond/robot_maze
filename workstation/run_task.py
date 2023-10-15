@@ -5,14 +5,13 @@ Note that the cropping parameters are sent to Bonsai by csv file; we don't
 need to delete the csv file, as this is handled by Bonsai after reading it.
 '''
 
-# from honeycomb_task.configuration import read_yaml
 from honeycomb_task.robot import Robots
 from honeycomb_task.create_path import Paths
 from honeycomb_task.choices import Choices
 from honeycomb_task.platform_map import Map
 from honeycomb_task.send_over_socket import send_over_sockets_threads
 from honeycomb_task.animal import Animal, write_date_and_time, write_bonsai_crop_params
-from honeycomb_task.move_tracking_files import move_tracking_files, remove_file
+from honeycomb_task.move_tracking_files import honeycomb_task_file_cleanup, create_directory
 import pickle
 import os
 import datetime
@@ -25,16 +24,14 @@ min_platform_dura_verify = 1  # minimum duration animal must be on  platform to 
 
 # top level folder
 top_dir = 'D:/testFolder'
-
 # ask user to enter the animal numnber
 animal_num = input('Enter animal number: ')
 # get the date without the time
-datetime_str = datetime.datetime.now().strftime('%Y-%m-%d')
+date_str = datetime.datetime.now().strftime('%Y-%m-%d')
 # create folder if it doesn't yet exist
-data_dir = os.path.join(top_dir, 'robot_maze_behaviour', f'Rat_{animal_num}', datetime_str)
+data_dir = os.path.join(top_dir, 'robot_maze_behaviour', f'Rat_{animal_num}', date_str)
 # if any of these nested folders don't exist, create them
-if not os.path.exists(data_dir):
-    os.makedirs(data_dir)
+create_directory(data_dir)
 
 # load previous choices
 previous_choices = Choices(directory=data_dir)   
@@ -66,11 +63,11 @@ write_bonsai_crop_params(crop_nums, top_dir)
 trial_data.save_initial_crop_params(crop_nums)
 
 # create animal instance necessary for tracking
-host = '0.0.0.0'  # server's IP address
-port = 8000  # UDP port
+HOST = '0.0.0.0'  # server's IP address
+PORT = 8000  # UDP port
 buffer_size = 1024
 n = 200  # Number of previous data points to store
-animal = Animal(host, port, buffer_size, n)
+animal = Animal(HOST, PORT, buffer_size, n)
 
 # tell user to start video, and then ephys, and then any 
 # button to start the trial
@@ -199,8 +196,9 @@ while True:
 # save the choice history to file
 trial_data.save_choices(data_dir)
 
+# stop video so that video and tracking files can be moved for storage
 input('stop video - press any key to continue')
 
-move_tracking_files(animal_num=animal_num, starting_dir=top_dir, \
-                     destination_dir=data_dir)
-remove_file(top_dir, 'time_and_date.csv')
+# move the tracking files to short and long term storage, removing them from 
+# acquisition directory
+honeycomb_task_file_cleanup(animal_num, top_dir, data_dir, datetime_str)

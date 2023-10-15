@@ -10,16 +10,13 @@ may ultimately be implemented independently of the robot class to deal with
 multiple robots at once)
 '''
 
-import socket
-from typing import Any
-from honeycomb_task.configuration import read_yaml
-from tkinter import filedialog
+from .configuration import read_yaml
 import copy
 
 
 # robot definition
 class Robot:
-    def __init__(self, robot_id, ip_address, port_number, position, orientation, state, map):
+    def __init__(self, robot_id, ip_address, port_number, position, orientation, state):
         self.id = robot_id
         self.ip_address = ip_address
         self.port = port_number        
@@ -34,7 +31,7 @@ class Robot:
         position = None
         orientation = None
         state = 'stationary'
-        return cls(robot_id, ip_address, port_number, position, orientation, state, map)
+        return cls(robot_id, ip_address, port_number, position, orientation, state)
 
     def set_new_position(self, new_position):
         self.position = new_position

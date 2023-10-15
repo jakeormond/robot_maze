@@ -6,7 +6,7 @@ the shortest path, a path that avoids other robots or obstacles, etc.
 '''
 import numpy as np
 import copy
-from honeycomb_task.platform_map import Map
+from .platform_map import Map
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
@@ -15,8 +15,7 @@ import matplotlib.patches as patches
 # list of positions to avoid
 class Paths:
     def __init__(self, robots, map, next_positions=None, task='task', \
-                 difficulty = 'hard', choices = None, time_per_turn = 0.5, \
-                    time_per_line = 1.):
+                 difficulty = 'hard', choices = None):
         
         if task == 'task':       
             if next_positions is None:

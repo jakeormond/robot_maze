@@ -59,7 +59,7 @@ def handle_server(robot, string_input, data_queue):
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
      # Set a timeout (e.g., 10 seconds) on the socket
-    s.settimeout(10)
+    s.settimeout(60)
 
     bytes_to_send = bytes(string_input, 'utf8')
 
@@ -77,7 +77,7 @@ def handle_server(robot, string_input, data_queue):
             with data_queue_lock:
                 data_queue.put(f'Connection with robot{robot.id} failed')
 
-            return 
+            # return 
    
     received_data = []
     max_retries = 3
@@ -163,12 +163,17 @@ def send_over_sockets_threads(robots, paths, print_output=False):
             thread.join()
 
         while not data_queue.empty():
-            data = data_queue.get()
-            # print(data)
-            if print_output:
-                 print("Received:", data)
+            with data_queue_lock:
+                data = data_queue.get()
+                # print(data)
+                if print_output:
+                    print("Received:", data)
 
-            time.sleep(0.1)
+                time.sleep(0.1)
     
     # robots.update_positions(paths)    
     return 
+
+if __name__ == '__main__':
+
+    send_over_socket('99, 3', '192.168.0.103', 65534)

@@ -1,10 +1,7 @@
-import sys 
-import os
-
 import unittest
-from ..honeycomb_task import create_path
-from ..honeycomb_task.robot import Robot, Robots
-from ..honeycomb_task.platform_map import Map
+from honeycomb_task import create_path
+from honeycomb_task.robot import Robot, Robots
+from honeycomb_task.platform_map import Map
 
 class TestPaths(unittest.TestCase):
 

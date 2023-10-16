@@ -12,8 +12,8 @@ def create_directory(new_directory, parent_directory=None):
             raise ValueError(f'You do not have write access to {parent_directory}')
             return
     
-        if not os.path.exists(new_directory):
-            os.mkdir(new_directory)
+    if not os.path.exists(new_directory):
+        os.makedirs(new_directory)
 
 def list_tracking_files(animal_num, starting_dir):
     # find all files in the starting directory, without including subdirectories
@@ -81,11 +81,12 @@ def remove_file(directory, filename):
     os.remove(os.path.join(directory, filename))
     
 
-def honeycomb_task_file_cleanup(animal_num, top_dir, data_dir, datetime_str):
+def honeycomb_task_file_cleanup(animal_num, trial_data, top_dir, data_dir, date_str):
     # copy the tracking files to the remote server for long term storage
     server_dir = 'X:/Jake/robot_maze'
     server_data_dir = os.path.join(server_dir, 'robot_maze_behaviour', f'Rat_{animal_num}', date_str)
     create_directory(server_data_dir, server_dir)
+    trial_data.save_choices(server_data_dir)
     move_tracking_files(animal_num=animal_num, starting_dir=top_dir, \
                         destination_dir=server_data_dir, remove_from_starting_dir=False)
 
@@ -93,12 +94,5 @@ def honeycomb_task_file_cleanup(animal_num, top_dir, data_dir, datetime_str):
     move_tracking_files(animal_num=animal_num, starting_dir=top_dir, \
                         destination_dir=data_dir, remove_from_starting_dir=True)
 
-
-    # create folder if it doesn't yet exist
-    data_dir = os.path.join(top_dir, 'robot_maze_behaviour', f'Rat_{animal_num}', datetime_str)
-    # if any of these nested folders don't exist, create them
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-
-    remove_file(top_dir, 'time_and_date.csv')
+    remove_file(top_dir, 'date_and_time.csv')
 

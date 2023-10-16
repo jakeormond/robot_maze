@@ -201,4 +201,4 @@ input('stop video - press any key to continue')
 
 # move the tracking files to short and long term storage, removing them from 
 # acquisition directory
-honeycomb_task_file_cleanup(animal_num, top_dir, data_dir, datetime_str)
+honeycomb_task_file_cleanup(animal_num, trial_data, top_dir, data_dir, date_str)

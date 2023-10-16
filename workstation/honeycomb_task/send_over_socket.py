@@ -70,7 +70,7 @@ def handle_server(robot, string_input, data_queue):
             break
         except (socket.error, ConnectionRefusedError) as e:
             print(f"Error connecting to robot{robot.id}: {e}")
-            print("Try rebooting it and then press enter to continue")
+            print("Try again in a second...")
             # pause the program while the user reboots the robot
             time.sleep(1)
 

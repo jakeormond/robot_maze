@@ -3,10 +3,11 @@ import threading
 import queue
 import time
 
+# Create a lock for protecting the data_queue
+data_queue_lock = threading.Lock()
+
 # Define constants
 BUFFER_SIZE = 1024
-TIMEOUT = 10
-# NUM_COMMANDS = 2    
 
 def send_over_socket(string_input, HOST, PORT):
     import socket
@@ -57,26 +58,24 @@ def handle_server(robot, string_input, data_queue):
     server_address = (robot.ip_address, robot.port)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+     # Set a timeout (e.g., 10 seconds) on the socket
+    s.settimeout(10)
 
     bytes_to_send = bytes(string_input, 'utf8')
 
-    try:
-        s.connect(server_address)
-        s.sendall(bytes_to_send)
-    except (socket.error, ConnectionRefusedError) as e:
-        print(f"Error connecting to robot{robot.id}: {e}")
-        print("Try rebooting it and then press enter to continue")
-        # pause the program while the user reboots the robot
-        input(" ")
-
+    while True:
         try:
-            # try to connect again
             s.connect(server_address)
             s.sendall(bytes_to_send)
+            break
         except (socket.error, ConnectionRefusedError) as e:
-            print(f"Reconnection to robot{robot.id} failed: {e}")
-            print("Aborting")
-            data_queue.put(f'Connection with robot{robot.id} failed')
+            print(f"Error connecting to robot{robot.id}: {e}")
+            print("Try rebooting it and then press enter to continue")
+            # pause the program while the user reboots the robot
+            time.sleep(1)
+
+            with data_queue_lock:
+                data_queue.put(f'Connection with robot{robot.id} failed')
 
             return 
    
@@ -100,7 +99,8 @@ def handle_server(robot, string_input, data_queue):
             data = [x for x in data if x != '']
             received_data.extend(data)
 
-        except ConnectionResetError:
+        except ConnectionResetError as e:
+            print(f"Error: {e}")
             if retry_counter > max_retries:
                 break
            
@@ -112,8 +112,8 @@ def handle_server(robot, string_input, data_queue):
 
     data_with_identifier = {'robot_id': robot.id, 
                             'data': received_data}
-
-    data_queue.put(data_with_identifier)
+    with data_queue_lock:
+        data_queue.put(data_with_identifier)
 
     return
 

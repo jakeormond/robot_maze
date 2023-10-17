@@ -1,4 +1,4 @@
-robot code
+#Robot honeycomb maze
 
 robot (raspberry pi pico w)
 - main.py 

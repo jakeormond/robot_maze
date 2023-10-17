@@ -7,6 +7,8 @@ the shortest path, a path that avoids other robots or obstacles, etc.
 import numpy as np
 import copy
 from .platform_map import Map
+import matplotlib
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 

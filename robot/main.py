@@ -22,15 +22,10 @@ def connect():
 led = Pin('LED', Pin.OUT)
 led.value(False)
 
-#ssid = 'TP-Link_6612'
-#password = '39308399'
-
 ssid = 'TP-Link_BD5D'
 password = '31941976'
-PORT = 65533 # robot 1 is 65535, robot 2 is 65534
-
+PORT = 65533 
 ipconfig = ('192.168.0.104', '255.255.255.0', '192.168.0.1', '8.8.8.8')
-# robot 1 is 192.168.0.102, robot 2 is 192.168.0.103
 
 try:
     connect()

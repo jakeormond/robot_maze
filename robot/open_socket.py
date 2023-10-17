@@ -49,9 +49,7 @@ def open_socket_connection(PORT):
     
             
 def parse_data(data, conn):
-    # print(data)
     data = [int(s) for s in data.decode().split(',')]
-    # print(data)
     
     if data[0] == 96: 
         encoder_distance = dr.drive_forward_by_distance(data[1], conn)
@@ -75,12 +73,7 @@ def parse_data(data, conn):
         
         line_distances1, line_distances2, \
             gap_distances1, gap_distances2 = dr.linear_drive(data[1], conn)
-        
-        print(line_distances1)
-        print(line_distances2)
-        print(gap_distances1)
-        print(gap_distances2)
-        
+               
         conn.sendall(str(line_distances1))
         conn.sendall(str(line_distances2))
         conn.sendall(str(gap_distances1))

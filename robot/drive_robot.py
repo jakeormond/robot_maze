@@ -259,7 +259,7 @@ def find_line_back_and_forth(conn=None):
                
         # drive and sleep
         drive_for_turn(INITIAL_TURN_SPEED, direction)            
-        utime.sleep_ms(20)        
+        utime.sleep_ms(10)        
         
         # check if online
         online_flag = check_online()
@@ -507,7 +507,7 @@ def turn_by_distance(distance, direction, conn=None): # direction == 1 for clock
         
         round_speed = round(speed)
         drive_for_turn(round_speed, direction)                   
-        utime.sleep_ms(20)        
+        utime.sleep_ms(10)        
             
         # calculate elapsed time and stop if timed out
         elapsed_time = time.time() - start_time

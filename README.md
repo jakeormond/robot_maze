@@ -20,7 +20,7 @@ The robot package provides code written in MicroPython to connect the robot to t
 
 ## 2) workstation
 
-The workstation package provides code written in Python to run the behavioural task, which involves selecting platform positions, calculating the robot trajectories and translating these into commands to send to the robots, an and registering the animal's choices. 
+The workstation package provides code written in Python to run the behavioural task, which involves selecting platform positions, calculating the robot trajectories and translating these into commands to send to the robots over WiFi, and registering the animal's choices. 
 
 ## 3) video_tracking
 

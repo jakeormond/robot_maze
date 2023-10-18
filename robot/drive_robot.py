@@ -109,7 +109,6 @@ def calculate_distance(enc1_a, enc2_a):
 def read_sensors():
     val1 = adc1.read_u16() # IR sensor 1
     val2 = adc2.read_u16() # IR sensor 2
-    # print(val1, val2)
     return val1, val2
 
 def check_online(): # 0 not on line, 1 left on line, 2 right on line, 3 both on line

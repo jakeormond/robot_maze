@@ -8,9 +8,6 @@ import yaml
 
 def create_yaml():
 
-    yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
-    os.chdir(yaml_dir)
-
     data = {
         'robot1': {
             'robot_id': 1, 
@@ -34,7 +31,7 @@ def create_yaml():
             'orientation': 0
         }
     }
-    return
+    return data
 
 def save_yaml(data, yaml_dir=None):
     if yaml_dir is None:
@@ -53,3 +50,9 @@ def read_yaml(yaml_dir):
         data = yaml.load(yaml_file, Loader=yaml.FullLoader)
     
     return data
+
+if __name__ == '__main__':
+    configuration = create_yaml()
+
+    yaml_dir = '/home/jake/Documents/robot_test_folder'
+    save_yaml(configuration, yaml_dir)

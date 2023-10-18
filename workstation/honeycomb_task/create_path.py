@@ -832,9 +832,11 @@ def plot_paths(map, robots, optimal_paths):
         for t in a.texts:
             t.set_clip_on(True)
 
-    # os.environ['DISPLAY'] = ':0.1'
-    fig.canvas.manager.window.wm_geometry("800x600+0+0")
-    fig.canvas.manager.window.wm_attributes('-topmost', 1)
+    # fig.canvas.manager.window.wm_geometry("800x600+0+0")
+    # fig.canvas.manager.window.wm_attributes('-topmost', 1)
+
+    fig.canvas.manager.window.move(200, 100)
+
     plt.show(block=False)
 
     # return the figure handle

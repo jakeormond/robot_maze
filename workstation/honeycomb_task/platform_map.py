@@ -516,7 +516,7 @@ def find_shortest_paths(position1, position2, map):
     return paths
 
 
-def get_ring(position, map, ring_order):
+def get_ring_v1(position, map, ring_order):
     axes = get_axes(position, map)
     axes_names = ['vert', 'ne', 'nw']
     vertices = [np.nan] * 6
@@ -560,6 +560,106 @@ def get_ring(position, map, ring_order):
         # append ring_section to rings[f'ring{o+1}']
         ring = ring + ring_section[:-1]
 
+    return ring
+
+def get_ring(position, map, ring_order):
+    axes = get_axes(position, map)
+    axes_names = ['vert', 'ne', 'nw']
+    vertices = [np.nan] * 6
+
+    for a in axes_names:
+        pos_ind = axes[a].index(position)
+
+        if a == 'vert':
+            vertex_ind = [0,3]
+        elif a == 'ne':
+            vertex_ind = [1,4]
+        else:
+            vertex_ind = [5,2]
+    
+        if pos_ind - ring_order < 0:
+            vertices[vertex_ind[0]] = np.nan
+        else:
+            vertices[vertex_ind[0]] = axes[a][pos_ind - ring_order]
+
+        if pos_ind + ring_order >= len(axes[a]):
+            vertices[vertex_ind[1]] = np.nan
+        else:
+            vertices[vertex_ind[1]] = axes[a][pos_ind + ring_order]
+    
+    ring = []
+
+    for v in range(6):
+
+        ring_section = []
+
+        if v == 5:
+            v2 = 0
+        else:
+            v2 = v + 1
+
+        if not np.isnan(vertices[v]) and not np.isnan(vertices[v2]):
+            ring_section_temp = map.straight_path(vertices[v], vertices[v2])
+            ring_section = ring_section_temp[:-1]
+
+        else:
+            if not np.isnan(vertices[v]) and np.isnan(vertices[v2]):
+                v_ind = map.get_indices_of_postion(vertices[v])
+                op = 'addition'
+                ring_section = [map.platform_map[v_ind[0], v_ind[1]]]            
+
+            elif np.isnan(vertices[v]) and not np.isnan(vertices[v2]):
+                v_ind = map.get_indices_of_postion(vertices[v2])    
+                op = 'subtraction'
+            
+            else:
+                continue                       
+
+            while True:
+
+                if op == 'addition':
+                    if v == 0:
+                        v_ind = v_ind + np.array([1, 1])
+                    elif v == 1:
+                        v_ind = v_ind + np.array([2, 0])
+                    elif v == 2:
+                        v_ind = v_ind + np.array([1, -1])
+                    elif v == 3:
+                        v_ind = v_ind + np.array([-1, -1])
+                    elif v == 4:
+                        v_ind = v_ind + np.array([-2, 0])
+                    else:
+                        v_ind = v_ind + np.array([-1, 1])
+
+                else:
+                    if v == 0:
+                        v_ind = v_ind - np.array([1, 1])
+                    elif v == 1:
+                        v_ind = v_ind - np.array([2, 0])
+                    elif v == 2:
+                        v_ind = v_ind - np.array([1, -1])
+                    elif v == 3:
+                        v_ind = v_ind - np.array([-1, -1])
+                    elif v == 4:
+                        v_ind = v_ind - np.array([-2, 0])
+                    else:
+                        v_ind = v_ind - np.array([-1, 1])
+
+                # if v_ind is out of bounds, break
+                if v_ind[0] >= map.platform_map.shape[0] or \
+                        v_ind[0] < 0 or \
+                        v_ind[1] >= map.platform_map.shape[1] or \
+                        v_ind[1] < 0 or \
+                            map.platform_map[v_ind[0], v_ind[1]] == vertices[v2]:
+                    
+                    break   
+
+                ring_section = ring_section + [map.platform_map[v_ind[0], v_ind[1]]]
+
+            if op != 'addition':
+                ring_section = ring_section[::-1]
+
+        ring = ring + ring_section
     return ring
 
 
@@ -688,9 +788,12 @@ def save_map(filename, map, directory=None):
 if __name__ == '__main__':
 
     # directory = "/media/jake/LaCie/robot_maze_workspace"
-    
+    map_dir = '/home/jake/Documents/robot_maze/workstation/map_files'
+    # map = Map(directory=map_dir)
     map = Map(28, [9, 10]) 
     map.restrict_map(41, 217, extra_row=1)
+    # map.save_map(directory=map_dir)
+    ring = get_ring_v2(19, map, 2)       
+    # map.save_map()
 
-    ring = get_ring(53, map, 3)       
-    map.save_map()
+    # get_rings_v2(position, map, ring_order)

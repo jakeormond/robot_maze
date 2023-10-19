@@ -1,4 +1,5 @@
 *.[oa]
 *~
 workstation/.venv/
+robot/sensor_and_encoder_testing
 .vscode

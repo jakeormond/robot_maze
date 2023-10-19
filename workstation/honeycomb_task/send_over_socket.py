@@ -58,8 +58,8 @@ def handle_server(robot, string_input, data_queue):
     server_address = (robot.ip_address, robot.port)
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-     # Set a timeout (e.g., 10 seconds) on the socket
-    s.settimeout(60)
+    # Set a timeout (e.g., 10 seconds) on the socket
+    s.settimeout(10)
 
     bytes_to_send = bytes(string_input, 'utf8')
 
@@ -68,7 +68,7 @@ def handle_server(robot, string_input, data_queue):
             s.connect(server_address)
             s.sendall(bytes_to_send)
             break
-        except (socket.error, ConnectionRefusedError) as e:
+        except (socket.error, ConnectionRefusedError, s.error) as e:
             print(f"Error connecting to robot{robot.id}: {e}")
             print("Try again in a second...")
             # pause the program while the user reboots the robot
@@ -83,6 +83,10 @@ def handle_server(robot, string_input, data_queue):
     max_retries = 3
     base_delay = 1  # Initial delay in seconds
     retry_counter = 0
+
+    # reset the timeout 
+    s.settimeout(20)
+
     while True:        
         
         try:
@@ -108,14 +112,20 @@ def handle_server(robot, string_input, data_queue):
             time.sleep(base_delay * (2**retry_counter))  # wait a bit            
             retry_counter += 1
 
-        time.sleep(0.1) # not sure if this necessary or not
+        except socket.timeout:
+            print("Socket timeout occurred during data reception.")
+            # Handle the timeout situation
+            break
+
+        time.sleep(0.1) 
 
     data_with_identifier = {'robot_id': robot.id, 
                             'data': received_data}
     with data_queue_lock:
         data_queue.put(data_with_identifier)
 
-    return
+    return 
+
 
 def send_over_sockets_serial(robots, paths, ordered_keys):
     # get commands
@@ -171,7 +181,6 @@ def send_over_sockets_threads(robots, paths, print_output=False):
 
                 time.sleep(0.1)
     
-    # robots.update_positions(paths)    
     return 
 
 if __name__ == '__main__':

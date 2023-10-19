@@ -139,7 +139,11 @@ while True:
 
                 # recompute the paths and send the new commands
                 paths.close_paths_plot()
-                paths = Paths(robots, map, choices=trial_data)
+                
+                if choice_counter != 1 and chosen_platform == map.goal_position:
+                    paths = Paths(robots, map, task='move_away')
+                else:
+                    paths = Paths(robots, map, choices=trial_data)
 
             else:
                 print(f'Animal chose platform {int(verified_platform)}')

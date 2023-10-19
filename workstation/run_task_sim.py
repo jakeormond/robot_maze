@@ -12,6 +12,7 @@ from honeycomb_task.platform_map import Map
 from honeycomb_task.send_over_socket import send_over_sockets_threads
 from honeycomb_task.animal import Animal, write_date_and_time, write_bonsai_crop_params
 from honeycomb_task.move_tracking_files import honeycomb_task_file_cleanup, create_directory
+from honeycomb_task.plot_paths import Plot
 import pickle
 import os
 import datetime
@@ -95,8 +96,8 @@ difficulty = 'hard'
 # MAIN LOOP
 choice_counter = 1
 start_platform = robots.members['robot1'].position
-
 possible_platforms = robots.get_positions()
+robot_path_plot = Plot()
 while True:
     # if animal is at goal, we just need to move the other 2 robots away
     if choice_counter != 1 and chosen_platform == map.goal_position:
@@ -175,8 +176,8 @@ while True:
                 break
 
     # plot the paths
-    paths.plot_paths(robots, map)
-
+    # paths.plot_paths(robots, map)
+    robot_path_plot.plot_paths(robots, map, paths.optimal_paths)
     # send the remaining commands to robots.
     # send_over_sockets_threads(robots, paths)
     robots.update_positions(paths)    
@@ -224,7 +225,7 @@ while True:
     robots.members[non_stat_robot_key].set_new_state('moving')
 
     # close plot of paths
-    paths.close_paths_plot()
+    # paths.close_paths_plot()
 
 # save the choice history to file
 trial_data.save_choices(data_dir)

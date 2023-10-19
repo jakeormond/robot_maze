@@ -68,7 +68,7 @@ def handle_server(robot, string_input, data_queue):
             s.connect(server_address)
             s.sendall(bytes_to_send)
             break
-        except (socket.error, ConnectionRefusedError, s.error) as e:
+        except (socket.error, ConnectionRefusedError) as e:
             print(f"Error connecting to robot{robot.id}: {e}")
             print("Try again in a second...")
             # pause the program while the user reboots the robot

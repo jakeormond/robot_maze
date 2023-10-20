@@ -93,7 +93,7 @@ class Plot:
 
         self.fig_handle.canvas.flush_events()
         plt.show(block=False)
-        time.sleep(.1)
+        time.sleep(2)
         return 
 
     def close_paths_plot(self):

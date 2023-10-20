@@ -17,6 +17,7 @@ import os
 import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
+import copy
 plt.ion
 
 # CONSTANTS
@@ -36,9 +37,10 @@ data_dir = os.path.join(top_dir, 'robot_maze_behaviour', f'Rat_{animal_num}', da
 create_directory(data_dir)
 
 # load previous choices
-previous_choices = Choices(directory=data_dir)   
+previous_trial_choices = Choices(directory=data_dir)   
 # initialize new data storage
 trial_data = Choices()
+previous_choices = Choices()
 datetime_str = trial_data.name
 
 # create robot instances in a dictionary
@@ -87,8 +89,20 @@ while True:
     if choice_counter != 1 and chosen_platform == map.goal_position:
             paths = Paths(robots, map, task='move_away')
     else:
-        # concatenate trial data to the previous choices for the day
-        previous_choices.data = pd.concat([previous_choices.data, trial_data.data], ignore_index=True)
+        # determine if trial_data.data is empty
+        if not trial_data.data.empty and not previous_trial_choices.data.empty:
+            # concatenate trial data to the previous choices for the day
+            previous_choices.data = pd.concat([previous_trial_choices.data, trial_data.data], ignore_index=True)
+        
+        elif not trial_data.data.empty:
+            # if trial data is not empty, then this is the first trial of the day
+            previous_choices = copy.deepcopy(trial_data)
+        
+        elif not previous_trial_choices.data.empty:
+            # if trial data is empty, then this is the first choice of the trial
+            previous_choices = copy.deepcopy(previous_trial_choices)
+
+
         # pick next platforms and construct paths as well as commands and durations
         paths = Paths(robots, map, choices=previous_choices)
 
@@ -144,7 +158,7 @@ while True:
                 if choice_counter != 1 and chosen_platform == map.goal_position:
                     paths = Paths(robots, map, task='move_away')
                 else:
-                    paths = Paths(robots, map, choices=trial_data)
+                    paths = Paths(robots, map, choices=previous_choices)
 
             else:
                 print(f'Animal chose platform {int(verified_platform)}')

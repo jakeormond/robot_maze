@@ -6,7 +6,9 @@ The main behavioural task program (robot_maze/workstation/run_task.py) must be s
 
 To effectively track the animal, a high-resolution camera is required, but if the acquired images are left uncropped, the resulting video file will be very large. To mitigate this issue, we dynamically crop the images before storing them within the video file. This is possible because the animal can only ever be found within a sub-area of the field of view, and this sub-area is determined by the positions of the 3 robots. Every time the robots complete their trajectories to a new set of choice positions, run_task.py saves a .txt file containing crop coordinates. This file is immediately read by the video_tracking program, and then deleted. At the end of the trial, the video tracking will output files containing the timestamps at which the cropping parameters changed, as well as the values of those parameters, allowing the experimenter to recover the absolute positions of the frames and subject. 
 
-To synchronize the video with electrophysiological recordings, robotMaze_DLC sends randomly timed digital pulses using a usb connected Arduino running the file "blink.ino" found in "robot_maze/video_tracking/arduino_code/". The timestamps of these pulses is save in the file "pulseTS_DATA_TIME.csv". PROVIDE IMAGE OF ARDUINO CONNECTIONS. 
+To synchronize the video with electrophysiological recordings, robotMaze_DLC sends randomly timed digital pulses using a usb connected Arduino running the file "blink.ino" found in "robot_maze/video_tracking/arduino_code/". The timestamps of these pulses are saved in the file "pulseTS_DATA_TIME.csv". 
+
+![arduino with digital out](../images/arduino_digital_out.jpg)
 
 
 

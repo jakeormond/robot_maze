@@ -22,6 +22,7 @@ Handles the parsing of input commands and generation of the output commands. Com
 
 ![robots navigating along line patter](../images/robot_movement_schematic.jpg)
 
+
 Figure: The robot has two main modes of movement. On the left, using the sensors (the 2 blue dots), it can travel in a straightline along the white lines, detecting the gaps at the end of the lines to count the number of lines along which it's travelled. On the right, when it has crossed a gap and found the subsequent line, it can turn in place by running the two wheels in opposite directions; it reads the wheel encoders to determine how far it has turned, and when it has nearly turned the distance expected for the number of lines it should cross (in the example, the number is 2) it begins looking for the next line, and stops once it is found. 
 
 For testing purposes, a few other functions are included (e.g., to read the sensors, pass ['94'] as the command). 

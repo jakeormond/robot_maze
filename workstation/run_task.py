@@ -17,6 +17,8 @@ import pickle
 import os
 import datetime
 import pandas as pd
+import matplotlib.pyplot as plt
+plt.ion
 
 # CONSTANTS
 min_platform_dura_new = 2  # minimum duration animal must be on new platform to register choice
@@ -155,9 +157,13 @@ while True:
     # plot the paths
     # paths.plot_paths(robots, map)
     robot_path_plot.plot_paths(robots, map, paths.optimal_paths)
+    robots.update_positions(paths)  # the positions need to be update before the move so we can update the crop parameters
+    # get new crop parameters
+    crop_nums = map.get_crop_nums(robots.get_positions())
+    write_bonsai_crop_params(crop_nums, top_dir) 
+    
     # send the remaining commands to robots.
-    send_over_sockets_threads(robots, paths)
-    robots.update_positions(paths)    
+    send_over_sockets_threads(robots, paths)      
 
     # if at the goal, then trial is done
     if choice_counter != 1:
@@ -166,9 +172,7 @@ while True:
             print('End of trial')
             break   
 
-    # get new crop parameters
-    crop_nums = map.get_crop_nums(robots.get_positions())
-    write_bonsai_crop_params(crop_nums, top_dir)   
+      
 
     # start the choice and save crop params
     trial_data.start_choice(start_platform)

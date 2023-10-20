@@ -19,7 +19,7 @@ import time
 class Plot:
     def __init__(self) :
             # create the fogure and axes
-            self.fig_handle, self.ax = plt.subplots(1, 2, figsize=(20,10))
+            self.fig_handle, self.ax = plt.subplots(1, 2, figsize=(10,5))
         
     def plot_paths(self, robots, map, optimal_paths):   
         
@@ -89,11 +89,11 @@ class Plot:
         # fig.canvas.manager.window.wm_geometry("800x600+0+0")
         # fig.canvas.manager.window.wm_attributes('-topmost', 1)
 
-        self.fig_handle.canvas.manager.window.move(200, 100)
+        self.fig_handle.canvas.manager.window.move(-1600, 200)
 
         self.fig_handle.canvas.flush_events()
         plt.show(block=False)
-        time.sleep(2)
+        plt.pause(2)
         return 
 
     def close_paths_plot(self):

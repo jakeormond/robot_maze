@@ -13,7 +13,6 @@ from honeycomb_task.send_over_socket import send_over_sockets_threads
 from honeycomb_task.animal import Animal, write_date_and_time, write_bonsai_crop_params
 from honeycomb_task.move_tracking_files import honeycomb_task_file_cleanup, create_directory
 from honeycomb_task.plot_paths import Plot
-import pickle
 import os
 import datetime
 import pandas as pd
@@ -53,9 +52,6 @@ map_dir = 'D:/testFolder/pico_robots/map'
 map = Map(directory=map_dir)
 map.set_goal_position(input('Enter goal position: '))
 
-with open(map_dir + '/platform_coordinates.pickle', 'rb') as handle: # MAYBE I SHOULD ADD PLATFORM_COORDINATES TO MAP CLASS?????
-    platform_coordinates = pickle.load(handle)
-
 # save filenames for Bonsai to use and set Bonsai path
 write_date_and_time(datetime_str, top_dir)
 
@@ -83,7 +79,7 @@ difficulty = 'hard'
 # MAIN LOOP
 choice_counter = 1
 start_platform = robots.members['robot1'].position
-possible_platforms = robots.get_positions()
+# possible_platforms = robots.get_positions()
 robot_path_plot = Plot()
 
 while True:
@@ -116,12 +112,13 @@ while True:
             # robot positions are updated in this function
             send_over_sockets_threads(robots, initial_turns)
             robots.update_orientations(initial_turns)  
+            print(robots)
 
             # SO WE CAN MAKE SURE THE ANIMAL DIDN'T MOVE
             # monitor the tracking data coming from Bonsai to determine
             # when the animal's made its decision. 
             verified_platform, _ = animal.find_new_platform(possible_platforms, start_platform, 
-                               platform_coordinates, crop_nums, min_platform_dura_verify)
+                               map.platform_coordinates, crop_nums, min_platform_dura_verify)
                        
             if chosen_platform != verified_platform:
                 print('Animal changed its mind!')
@@ -188,7 +185,7 @@ while True:
 
     # get the animal's choice    
     chosen_platform, unchosen_platform = animal.find_new_platform(possible_platforms, start_platform, 
-                               platform_coordinates, crop_nums, min_platform_dura_new)
+                               map.platform_coordinates, crop_nums, min_platform_dura_new)
     print(f'Animal chose platform {int(chosen_platform)}')
     trial_data.register_choice(chosen_platform, unchosen_platform)
     choice_counter += 1    
@@ -211,4 +208,5 @@ input('stop video - press any key to continue')
 
 # move the tracking files to short and long term storage, removing them from 
 # acquisition directory
-honeycomb_task_file_cleanup(animal_num, trial_data, top_dir, data_dir, date_str)
+server_dir = 'X:/Jake/robot_maze'
+honeycomb_task_file_cleanup(animal_num, trial_data, top_dir, data_dir, date_str, server_dir)

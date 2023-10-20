@@ -16,7 +16,7 @@ from honeycomb_task.platform_map import Map
 from frame_capture import capture_frame
 from honeycomb_task.create_path import Paths
 from honeycomb_task.send_over_socket import send_over_sockets_serial
-from tkinter import filedialog
+# from tkinter import filedialog
 from time import sleep
 
 def get_next_positions(platform_map, prev_positions, lr_direction):

@@ -15,7 +15,7 @@ def create_directory(new_directory, parent_directory=None):
     if not os.path.exists(new_directory):
         os.makedirs(new_directory)
 
-def list_tracking_files(animal_num, starting_dir):
+def list_tracking_files(starting_dir):
     # find all files in the starting directory, without including subdirectories
     files = os.listdir(starting_dir)
 
@@ -39,7 +39,7 @@ def move_tracking_files(animal_num=None, starting_dir=None, destination_dir=None
         root.withdraw()
         starting_dir = tk.filedialog.askdirectory()
     
-    video_files, csv_files = list_tracking_files(animal_num, starting_dir)
+    video_files, csv_files = list_tracking_files(starting_dir)
 
     if destination_dir is None:
         # allow user to select the destination directory using a GUI
@@ -81,9 +81,8 @@ def remove_file(directory, filename):
     os.remove(os.path.join(directory, filename))
     
 
-def honeycomb_task_file_cleanup(animal_num, trial_data, top_dir, data_dir, date_str):
+def honeycomb_task_file_cleanup(animal_num, trial_data, top_dir, data_dir, date_str, server_dir):
     # copy the tracking files to the remote server for long term storage
-    server_dir = 'X:/Jake/robot_maze'
     server_data_dir = os.path.join(server_dir, 'robot_maze_behaviour', f'Rat_{animal_num}', date_str)
     create_directory(server_data_dir, server_dir)
     trial_data.save_choices(server_data_dir)

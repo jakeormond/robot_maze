@@ -10,7 +10,8 @@ setup(
         "pandas",
         "numpy",
         "matplotlib",
+        "PyQt5",
         "pyyaml",
-        "cv2"
+        "opencv-python",
     ],
 )

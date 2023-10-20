@@ -20,7 +20,7 @@ ipconfig = ('192.168.0.104', '255.255.255.0', '192.168.0.1', '8.8.8.8')
 
 Handles the parsing of input commands and generation of the output commands. Commands from the workstation are sent as a string of digits, with the first digit indicating the function to execute from drive_robot.py. These functions are listed in the parse_data definition. The program executed during the task is called with '99', followed by the series of turns and straightline trajectories required for the robot to follow the path created by the workstation (see figure in main folder README.md; e.g., the red robot in that figure would have received the command '99, 0, 1, 1, 1, 1, 2, 1, 1, 1, 1'). 
 
-<img src="../images/robot_movement_schematic.jpg" width="600" height="260">
+![robots navigating along line patter](../images/robot_movement_schematic.jpg)
 
 Figure: The robot has two main modes of movement. On the left, using the sensors (the 2 blue dots), it can travel in a straightline along the white lines, detecting the gaps at the end of the lines to count the number of lines along which it's travelled. On the right, when it has crossed a gap and found the subsequent line, it can turn in place by running the two wheels in opposite directions; it reads the wheel encoders to determine how far it has turned, and when it has nearly turned the distance expected for the number of lines it should cross (in the example, the number is 2) it begins looking for the next line, and stops once it is found. 
 

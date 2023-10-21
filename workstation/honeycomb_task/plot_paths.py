@@ -10,7 +10,6 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import time
 
 
 # CreatePath should take a start and end position, and optionally a 
@@ -118,54 +117,28 @@ def draw_platform(map, pos, ax, color='r'):
 
 
 if __name__ == '__main__':
-    # __package__ = "honeycomb_task"
-    # directory = '/media/jake/LaCie/robot_maze_workspace'
-    # directory = 'D:/testFolder/pico_robots/map'
-    directory = 'C:/Users/Jake/Documents/robot_maze'
-    # directory = 'C:/Users/Jake/Desktop/map_of_platforms'
-    # map = platform_map.open_map(map='restricted_map', directory=directory)
+    # select a directory using tkinter
+    import tkinter as tk
+    from tkinter import filedialog
+    root = tk.Tk()
+    root.withdraw()
+    directory = filedialog.askdirectory()
+    
     
     map = Map(directory=directory)
-    map.goal_position = 146
+    map.goal_position = int(input('Enter goal position: '))
 
-    from robot import Robot, Robots 
+    from honeycomb_task.robot import Robots 
+    yaml_dir = filedialog.askdirectory()
+    robots = Robots.from_yaml(yaml_dir, orientations=[0, 0, 0])
 
-    robot1 = Robot(1, '192.168.0.102', 65535, 155, 0, 'stationary', map)
-    robot2 = Robot(2, '192.168.0.103', 65534, 136, 180, 'moving', map)
-    robot3 = Robot(3, '192.168.0.104', 65533, 127, 300, 'moving', map)
+    from honeycomb_task.create_path import Paths
+    paths = Paths(robots, map)
 
-   
-    robots = Robots()
-    robots.add_robots([robot1, robot2, robot3])
-    # yaml_dir = 'D:/testFolder/pico_robots/yaml'
-    # robots = Robots.from_yaml(yaml_dir)
+    robot_path_plot = Plot()
+    robot_path_plot.plot_paths(robots, map, paths.optimal_paths)
 
-
-    # next_plats = [43, 61]    
-    # initial_positions = get_starting_positions(robots, map)
-    # paths = get_all_paths(robots, next_plats, map)
-    # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
-    # print(optimal_paths)
-
-
-    next_plats = get_next_positions(robots, map, None, 'hard')
-    # print(next_plats)
-
-    # paths = Paths(robots, map, next_positions=[52, 42])
-    paths = Paths(robots, map, next_positions=next_plats)
-
-    paths.plot_paths(robots, map)
+    # pause until user presses enter    
+    input('Press enter to continue: ')
     
-    initial_turns = paths.split_off_initial_turn()
-    # commands, durations, _, final_orientations = paths_to_commands(robots, optimal_paths, map)
-    
-    # plt.show()
-    # initial_turns, paths = split_off_initial_turn(paths)
-
-    from send_over_socket import send_over_sockets_threads
-    send_over_sockets_threads(robots, initial_turns)
-
-    send_over_sockets_threads(robots, paths)
-    paths.close_paths_plot()
-
-    robots.update_positions(paths) 
+  

@@ -10,7 +10,7 @@ import os
 
 # choices definition
 class Choices:
-    def __init__(self, directory=None):
+    def __init__(self, directory=None, goal=None):
         # save the current time
         curr_time = dt.datetime.now()
         formatted_time = curr_time.strftime("%Y-%m-%d_%H.%M.%S")
@@ -23,7 +23,7 @@ class Choices:
 
         # if directory is not None, load the previous choices
         if directory is not None:
-            self.data = Choices.load_previous_choices(directory)
+            self.data = Choices.load_previous_choices(directory, goal)
 
         if self.data is None:
              self.data = pd.DataFrame(columns=['start_time', 'choice_time', \
@@ -70,18 +70,32 @@ class Choices:
         self.initial_crop_params['crop_height'] = crop_params[3]
 
     @staticmethod
-    def load_previous_choices(data_dir):
+    def load_previous_choices(data_dir, goal):
         # create a list of all csv files in the data directory
         csv_files = [f for f in os.listdir(data_dir) if f.startswith('20') and f.endswith('.csv')]
+
+        
 
         # if there are no csv files, return None
         if len(csv_files) == 0:
             return None
         
-        # otherwise, load the csv files into a list of dataframes of concatenate them
-        else:
-            csv_dfs = [pd.read_csv(f'{data_dir}/{csv_file}') for csv_file in csv_files]
-            return pd.concat(csv_dfs, ignore_index=True)
+        # read each csv file to determine if it was towards the same goal
+        csv_dfs = []
+        for csv_file in csv_files:
+            df = pd.read_csv(f'{data_dir}/{csv_file}')
+            if df['chosen_pos'].iloc[-1] == goal:
+                csv_dfs.append(df)
+        
+        if len(csv_dfs) == 0:
+            return None
+
+        return pd.concat(csv_dfs, ignore_index=True)                
+            
+        # otherwise, load the csv files into a list of dataframes and concatenate them
+        # else:
+        #    csv_dfs = [pd.read_csv(f'{data_dir}/{csv_file}') for csv_file in csv_files]
+        #    return pd.concat(csv_dfs, ignore_index=True)
         
     
 if __name__ == '__main__':

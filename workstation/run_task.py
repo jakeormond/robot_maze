@@ -36,13 +36,6 @@ data_dir = os.path.join(top_dir, 'robot_maze_behaviour', f'Rat_{animal_num}', da
 # if any of these nested folders don't exist, create them
 create_directory(data_dir)
 
-# load previous choices
-previous_trial_choices = Choices(directory=data_dir)   
-# initialize new data storage
-trial_data = Choices()
-previous_choices = Choices()
-datetime_str = trial_data.name
-
 # create robot instances in a dictionary
 # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
 yaml_dir = 'D:/testFolder/pico_robots/yaml'
@@ -53,6 +46,13 @@ robots = Robots.from_yaml(yaml_dir, orientations=[0, 0, 0])
 map_dir = 'D:/testFolder/pico_robots/map'
 map = Map(directory=map_dir)
 map.set_goal_position(input('Enter goal position: '))
+
+# load previous choices
+previous_trial_choices = Choices(directory=data_dir, goal=map.goal_position)   
+# initialize new data storage
+trial_data = Choices()
+previous_choices = Choices()
+datetime_str = trial_data.name
 
 # save filenames for Bonsai to use and set Bonsai path
 write_date_and_time(datetime_str, top_dir)

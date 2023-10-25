@@ -170,8 +170,9 @@ while True:
     robot_path_plot.plot_paths(robots, map, paths.optimal_paths)
     robots.update_positions(paths)  # the positions need to be update before the move so we can update the crop parameters
     # get new crop parameters
-    crop_nums = map.get_crop_nums(robots.get_positions())
-    write_bonsai_crop_params(crop_nums, top_dir) 
+    if choice_counter == 1 or chosen_platform != map.goal_position: # don't get new crop if at goal because it's unnecessary
+        crop_nums = map.get_crop_nums(robots.get_positions()) # and platform positions may be outside map
+        write_bonsai_crop_params(crop_nums, top_dir) 
     
     # send the remaining commands to robots.
     send_over_sockets_threads(robots, paths)      

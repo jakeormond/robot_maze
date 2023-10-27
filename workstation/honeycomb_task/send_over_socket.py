@@ -2,6 +2,7 @@ import socket
 import threading
 import queue
 import time
+import errno
 
 # Create a lock for protecting the data_queue
 data_queue_lock = threading.Lock()
@@ -71,6 +72,15 @@ def handle_server(robot, string_input, data_queue):
         except (socket.error, ConnectionRefusedError) as e:
             print(f"Error connecting to robot{robot.id}: {e}")
             print("Try again in a second...")
+
+            if e.errno == errno.WSAEISCONN: 
+                print("Socket is already connected.")
+                s.close()
+                print("Socket is now disconnected")
+                print("should try to reconnect")
+                time.sleep(2)
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
             # pause the program while the user reboots the robot
             time.sleep(1)
 

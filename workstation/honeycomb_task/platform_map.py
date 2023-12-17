@@ -29,6 +29,9 @@ class Map:
     def set_goal_position(self, goal_position):
         self.goal_position = int(goal_position)
 
+    def set_mirror(self, mirror_position):
+        self.mirror_position = int(mirror_position)
+
     def restrict_map(self, start_platform, stop_platform, extra_row=0):
         self.restricted_map, self.excluded_plats = \
             restrict_map(self.platform_map, start_platform, stop_platform, extra_row)

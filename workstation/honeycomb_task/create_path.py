@@ -28,6 +28,21 @@ class Paths:
             # select the optimal paths
             self.optimal_paths = select_optimal_paths(self.all_paths, robots, self.next_plats, map)
 
+        elif task == 'task_2goal':
+            if next_positions is None:
+                # pick next positions
+                self.next_plats = get_next_positions_2goal(robots, map, choices, difficulty)
+
+            else:
+                self.next_plats = next_positions
+                
+            # get all possible paths
+            self.all_paths = get_all_paths(robots, self.next_plats, map)
+
+            # select the optimal paths
+            self.optimal_paths = select_optimal_paths(self.all_paths, robots, self.next_plats, map)
+        
+        
         elif task == 'move_away': # the rat is at goal, so other 2 robots need to move away
             # in this case, we can just use the get_starting_positions method to get the 
             # next positions
@@ -313,6 +328,80 @@ def get_next_positions(robots, map, choices, difficulty):
 
     return next_positions
 
+def get_next_positions_2goal(robots, map, choices):
+
+    # get all possible pairs
+    # get first order ring around stationary robot
+    stat_robot = robots.get_stat_robot()
+    stat_robot_pos = stat_robot.position
+    possible_targets = np.sort(map.get_ring_around_position(stat_robot_pos, 1))
+    # remove positions that are in excluded_positions
+    excluded_positions = map.excluded_plats
+    possible_targets = np.setdiff1d(possible_targets, excluded_positions)
+    # get number of possible target pairs
+    n_possible_pairs = len(possible_targets) * (len(possible_targets) - 1) / 2
+    # create array containing all possible pairs
+    possible_pairs = np.zeros((int(n_possible_pairs), 2))
+    pair_ind = 0
+    for i in range(len(possible_targets)-1):
+        for i2 in range(i+1, len(possible_targets)):
+            possible_pairs[pair_ind] = [possible_targets[i], possible_targets[i2]]
+            pair_ind += 1
+
+
+    # remove pairs that don't satisfy distance criteria
+    # get stationary robot's distance to goal    
+    stat_dist = map.cartesian_distance(stat_robot_pos, map.goal_position)
+    statm_dist = map.cartesian_distance(stat_robot_pos, map.mirror_position)
+    # loop through each pair, removing pairs where neither member has shorter
+    # distance to goal than stat_robot_pos
+    row = 0
+    n_possible_pairs = possible_pairs.shape[0]
+    while row < n_possible_pairs:
+        p = possible_pairs[row,:]
+        p0_dist = map.cartesian_distance(p[0], map.goal_position)
+        p1_dist = map.cartesian_distance(p[1], map.goal_position)
+
+        p0m_dist = map.cartesian_distance(p[0], map.mirror_position)
+        p1m_dist = map.cartesian_distance(p[1], map.mirror_position)
+
+        if (p0_dist > stat_dist or p1m_dist > statm_dist) and \
+            (p1_dist > stat_dist or p0m_dist > statm_dist):
+            # delete row from possible_pairs
+            possible_pairs = np.delete(possible_pairs, row, axis=0)
+            n_possible_pairs -= 1
+        else:
+            row += 1
+
+    # find what, if any, choices have previously been made from stat_robot_pos using 
+    # the choices.data pandas dataframe
+    if choices != None:
+        choicesFromStart = choices.data[choices.data['start_pos'] == stat_robot_pos]
+        # extract the chosen and unchosen positions to a numpy array and remove 
+        # any repeated pairs
+        n_prev_pairs = 0
+        if choicesFromStart.empty == False:
+            previous_pairs = choicesFromStart[['chosen_pos', 'unchosen_pos']].to_numpy()
+            previous_pairs = previous_pairs.astype(int)
+            for p in range(previous_pairs.shape[0]):
+                previous_pairs[p] = np.sort(previous_pairs[p])
+            # remove duplicate pairs
+            previous_pairs = np.unique(previous_pairs, axis=0)
+            n_prev_pairs = previous_pairs.shape[0]
+
+            if n_prev_pairs != n_possible_pairs: # remove common pairs
+                for p in previous_pairs:
+                    if p in possible_pairs:
+                        # find row index of p in possible pairs
+                        row_ind = np.where(np.all(possible_pairs == p, axis=1))[0][0]
+                        # delete row from possible_pairs
+                        possible_pairs = np.delete(possible_pairs, row_ind, axis=0)
+    
+    # randomly reorder possible_pairs and select next positions
+    np.random.shuffle(possible_pairs)
+    next_positions = possible_pairs[0]    
+
+    return next_positions  
 
 def get_direct_paths(robots, next_plats, map):
     # get moving robots

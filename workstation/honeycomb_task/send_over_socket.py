@@ -195,4 +195,4 @@ def send_over_sockets_threads(robots, paths, print_output=False):
 
 if __name__ == '__main__':
 
-    send_over_socket('99, 3', '192.168.0.103', 65534)
+    send_over_socket('99, 3', '192.168.0.104', 65533)

@@ -152,7 +152,8 @@ def get_platform_positions(image_path=None):
 def draw_platforms_on_uncropped(directory=None):
     '''
     Draws the platform positions on the uncropped images. This is useful for 
-    checking that the platform positions were extracted correctly.
+    checking that the platform positions were extracted correctly. 
+    CURRENTLY, THIS NEEDS TO BE RUN TO SAVE THE CORRECTED PLATFORM COORDINATES FILE!!!!
     '''
     if directory is None:
         # directory = '/home/jake/Documents/robot_maze_platform_images'

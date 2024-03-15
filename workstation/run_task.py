@@ -215,6 +215,9 @@ while True:
     # close plot of paths
     # paths.close_paths_plot()
 
+# close plot
+# robot_path_plot.close_paths_plot()
+
 # save the choice history to file
 trial_data.save_choices(data_dir)
 

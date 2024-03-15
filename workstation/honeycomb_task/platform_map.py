@@ -253,7 +253,7 @@ class Map:
     def get_platform_coordinates(self, platform):
         return self.platform_coordinates[platform][0:2]
     
-    def get_crop_nums(self, robot_positions, window_size=(600, 600), 
+    def get_crop_nums(self, robot_positions, window_size=(700, 700), 
                       resolution=(2448, 2048)):
         n_pos = len(robot_positions)
         plat_coor = np.zeros((n_pos,2))

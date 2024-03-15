@@ -105,7 +105,7 @@ while True:
 
 
         # pick next platforms and construct paths as well as commands and durations
-        paths = Paths(robots, map, choices=previous_choices)
+        paths = Paths(robots, map, task='task_2goal', choices=previous_choices)
 
     # if this is the trial start, we can send the full commands,
     # otherwise, we need to turn the robots, and then make sure 
@@ -159,7 +159,7 @@ while True:
                 if choice_counter != 1 and chosen_platform == map.goal_position:
                     paths = Paths(robots, map, task='move_away')
                 else:
-                    paths = Paths(robots, map, choices=previous_choices)
+                    paths = Paths(robots, map, task='task_2goal', choices=previous_choices)
 
             else:
                 print(f'Animal chose platform {int(verified_platform)}')

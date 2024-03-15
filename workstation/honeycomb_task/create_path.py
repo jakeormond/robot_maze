@@ -31,7 +31,7 @@ class Paths:
         elif task == 'task_2goal':
             if next_positions is None:
                 # pick next positions
-                self.next_plats = get_next_positions_2goal(robots, map, choices, difficulty)
+                self.next_plats = get_next_positions_2goal(robots, map, choices)
 
             else:
                 self.next_plats = next_positions

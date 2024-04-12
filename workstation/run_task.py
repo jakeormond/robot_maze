@@ -22,6 +22,7 @@ plt.ion
 
 # CONSTANTS
 min_platform_dura_new = 2  # minimum duration animal must be on new platform to register choice
+min_platform_dura_shake = 4 # duration animal must remain on the stationary platform before it gets turned or shaken
 min_platform_dura_verify = 1  # minimum duration animal must be on  platform to verify choice
                             # after robots have made their initial turns 
 
@@ -132,8 +133,11 @@ while True:
             # monitor the tracking data coming from Bonsai to determine
             # when the animal's made its decision. 
             verified_platform, _ = animal.find_new_platform(possible_platforms, start_platform, 
-                               map.platform_coordinates, crop_nums, min_platform_dura_verify)
-                       
+                               map.platform_coordinates, crop_nums, min_platform_dura_verify, min_platform_dura_shake)
+
+
+
+
             if chosen_platform != verified_platform:
                 print('Animal changed its mind!')
                 print(f'new choice is platform {verified_platform}')
@@ -198,9 +202,19 @@ while True:
     choice_platforms.remove(start_platform)
     print(f'Choice platforms are {int(choice_platforms[0])} and {int(choice_platforms[1])}')
 
-    # get the animal's choice    
-    chosen_platform, unchosen_platform = animal.find_new_platform(possible_platforms, start_platform, 
-                               map.platform_coordinates, crop_nums, min_platform_dura_new)
+
+    # get the animal's choice, rotating the platform if it's not choosing
+    while start_platform == chosen_platform:    
+        chosen_platform, unchosen_platform = animal.find_new_platform(possible_platforms, start_platform, 
+                                map.platform_coordinates, crop_nums, min_platform_dura_new, min_platform_dura_shake)
+        
+        if chosen_platform == start_platform:
+            turn_path = Paths(robots, map, stat_turn=True)
+            print('animal refusing to move')
+            send_over_sockets_threads(robots, turn_path)
+            robots.update_orientations(turn_path)  
+
+
     print(f'Animal chose platform {int(chosen_platform)}')
     trial_data.register_choice(chosen_platform, unchosen_platform)
     choice_counter += 1    

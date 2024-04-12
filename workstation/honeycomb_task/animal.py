@@ -36,12 +36,12 @@ class Animal:
 
 
     def find_new_platform(self, possible_platforms, start_platform, 
-                            platform_coordinates, crop_coordinates, min_platform_dura):
+                            platform_coordinates, crop_coordinates, min_platform_dura, min_platform_dura_shake):
         
         print("Finding new platform...")
 
         self._start_data_receiver(possible_platforms, start_platform, 
-                            platform_coordinates, crop_coordinates, min_platform_dura)        
+                            platform_coordinates, crop_coordinates, min_platform_dura, min_platform_dura_shake)        
         
         self._start_manual_input_thread(possible_platforms, start_platform)
         self._wait_for_next_platform_event()    
@@ -53,7 +53,7 @@ class Animal:
         
     
     def _start_data_receiver(self, possible_platforms, start_platform, 
-                            platform_coordinates, crop_coordinates, min_platform_dura):
+                            platform_coordinates, crop_coordinates, min_platform_dura, min_platform_dura_shake):
         # Start the data receiver thread
         if self.data_receiver_thread is None or not self.data_receiver_thread.is_alive():
             self.data_receiver_thread = threading.Thread(target=self._receive_data, 
@@ -91,7 +91,7 @@ class Animal:
 
 
     def _receive_data(self, possible_platforms, start_platform,
-                      platform_coordinates, crop_coordinates, min_platform_dura):
+                      platform_coordinates, crop_coordinates, min_platform_dura, min_platform_dura_shake):
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             udp_socket.bind((self.host, self.port))
             
@@ -120,21 +120,40 @@ class Animal:
 
                         continue
 
-                    if target_platform != start_platform:
+                    else: 
                         recent_data = recent_data[::-1]
                         target_time = recent_data[0][1]
-                        for i in range(1, len(recent_data)):
-                            if recent_data[i][0] == target_platform:
-                                start_time = recent_data[i][1]
-                                duration = target_time - start_time
 
-                                if duration >= min_platform_dura:
-                                    new_platform = target_platform
-                                    self.current_platform = new_platform
-                                    self.next_platform_event.set()
-                                    return 
-                            else:
-                                break
+                        # if animal hasn't moved from start platform, turn the platform 60 deg
+                        if target_platform == start_platform:
+                            for i in range(1, len(recent_data)):
+                                if recent_data[i][0] == target_platform:
+                                    start_time = recent_data[i][1]
+                                    duration = target_time - start_time
+
+                                    if duration >= min_platform_dura_shake:
+                                        new_platform = target_platform
+                                        self.current_platform = new_platform
+                                        self.next_platform_event.set()
+                                        return
+                                
+                                else:
+                                    break
+                            
+                    # if animal has chosen a new platform
+                        elif target_platform != start_platform:
+                            for i in range(1, len(recent_data)):
+                                if recent_data[i][0] == target_platform:
+                                    start_time = recent_data[i][1]
+                                    duration = target_time - start_time
+
+                                    if duration >= min_platform_dura:
+                                        new_platform = target_platform
+                                        self.current_platform = new_platform
+                                        self.next_platform_event.set()
+                                        return 
+                                else:
+                                    break
 
                 except socket.timeout:
                     # Handle socket timeout error here

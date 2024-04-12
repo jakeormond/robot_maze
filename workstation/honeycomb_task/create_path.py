@@ -6,14 +6,41 @@ the shortest path, a path that avoids other robots or obstacles, etc.
 '''
 import numpy as np
 import copy
-from .platform_map import Map
+
+import platform
+# add robot_maze to path
+if platform.system() == 'Linux':
+    import sys
+    sys.path.append('/home/Jake/Documents/robot_maze/workstation')
+    from honeycomb_task.platform_map import Map
+
+else:
+    from .platform_map import Map
 
 # CreatePath should take a start and end position, and optionally a 
 # list of positions to avoid
 class Paths:
     def __init__(self, robots, map, next_positions=None, task='task', \
-                 difficulty = 'hard', choices = None):
+                 difficulty = 'hard', stat_turn=False, choices = None):
         
+        if stat_turn:
+            self.next_plats = None
+            self.all_paths = None
+            self.optimal_paths = None
+            self.command_strings = None
+            self.commands = None
+            self.orientations = None
+
+            # get the stat robot
+            stat_robot = robots.get_stat_robot()
+
+            self.command_strings, self.commands, self.orientations \
+                = turn_command(stat_robot)       
+            
+            return
+
+
+
         if task == 'task':       
             if next_positions is None:
                 # pick next positions
@@ -105,6 +132,7 @@ class Paths:
         else: # moving robots directly to next positions
             self.next_plats = next_positions
             self.optimal_paths = get_direct_paths(robots, next_positions, map)
+
 
         # get commands and timings
         self.command_strings, self.commands, self.orientations \
@@ -426,6 +454,7 @@ def get_direct_paths(robots, next_plats, map):
 
     return paths
 
+
 def get_all_paths(robots, next_plats, map):
     ''' determines the paths the moving robot can take to reach
     the required position adjacent to the stationary robot'''
@@ -669,6 +698,9 @@ def select_optimal_paths(paths, robots, next_plats, map):
     return optimal_paths
 
 
+
+
+
 def construct_paths(robots, next_plats, map):
     # get all possible paths
     all_paths = get_all_paths(robots, next_plats, map)
@@ -677,6 +709,27 @@ def construct_paths(robots, next_plats, map):
     optimal_paths = select_optimal_paths(all_paths, robots, next_plats, map)
 
     return optimal_paths
+
+
+def turn_command(robot):
+
+    robot_id = robot.id
+
+    # get starting position and direction
+    start_direction = robot.orientation
+
+    command = [1]
+    command_string = {f'robot{robot_id}': [int_to_string_command(command)]}
+    subcommands = {f'robot{robot_id}': [command_string[f'robot{robot_id}']]}
+
+    direction = start_direction + 60
+    if direction == 360:
+        direction = 0
+
+    suborientations = {f'robot{robot_id}': [[direction]]}   
+
+    return command_string, subcommands, suborientations
+
 
 
 # def path_to_command(robot, path, map, time_per_turn, time_per_line):
@@ -836,6 +889,12 @@ def paths_to_commands(robots, paths, map):
 
 
 def split_off_initial_turn(paths):
+
+    '''
+    Note that this currently isn't deleting the original paths from the instance
+    '''
+
+
     robot_list = list(paths.commands.keys())    
     if len(paths.commands[robot_list[0]][0]) == 1 and len(paths.commands[robot_list[1]][0]) == 1:
         # both robots have a single command in their first list
@@ -855,13 +914,17 @@ def split_off_initial_turn(paths):
     
     else:
         return None
+    
+
+
 
 
 if __name__ == '__main__':
     # __package__ = "honeycomb_task"
     # directory = '/media/jake/LaCie/robot_maze_workspace'
-    # directory = 'D:/testFolder/pico_robots/map'
-    directory = 'C:/Users/Jake/Documents/robot_maze'
+    # # directory = 'D:/testFolder/pico_robots/map'
+    # directory = 'C:/Users/Jake/Documents/robot_maze'
+    directory = '/home/jake/Documents/robot_maze'
     # directory = 'C:/Users/Jake/Desktop/map_of_platforms'
     # map = platform_map.open_map(map='restricted_map', directory=directory)
     
@@ -870,9 +933,9 @@ if __name__ == '__main__':
 
     from robot import Robot, Robots 
 
-    robot1 = Robot(1, '192.168.0.102', 65535, 155, 0, 'stationary', map)
-    robot2 = Robot(2, '192.168.0.103', 65534, 136, 180, 'moving', map)
-    robot3 = Robot(3, '192.168.0.104', 65533, 127, 300, 'moving', map)
+    robot1 = Robot(1, '192.168.0.102', 65535, 155, 0, 'stationary')
+    robot2 = Robot(2, '192.168.0.103', 65534, 136, 180, 'moving')
+    robot3 = Robot(3, '192.168.0.104', 65533, 127, 300, 'moving')
 
    
     robots = Robots()
@@ -891,10 +954,16 @@ if __name__ == '__main__':
     next_plats = get_next_positions(robots, map, None, 'hard')
     # print(next_plats)
 
+    
+
+
     # paths = Paths(robots, map, next_positions=[52, 42])
     paths = Paths(robots, map, next_positions=next_plats)
 
-    paths.plot_paths(robots, map)
+    paths = Paths(robots, map, stat_turn=True)
+
+
+    # paths.plot_paths(robots, map)
     
     initial_turns = paths.split_off_initial_turn()
     # commands, durations, _, final_orientations = paths_to_commands(robots, optimal_paths, map)

@@ -10,7 +10,16 @@ may ultimately be implemented independently of the robot class to deal with
 multiple robots at once)
 '''
 
-from .configuration import read_yaml
+import platform
+# add robot_maze to path
+if platform.system() == 'Linux':
+    import sys
+    sys.path.append('/home/Jake/Documents/robot_maze/workstation')
+    from honeycomb_task.configuration import read_yaml
+
+else:
+    from .configuration import read_yaml
+
 import copy
 
 

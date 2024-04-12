@@ -122,6 +122,20 @@ class Map:
                 return distance
             distance += 1    
 
+
+    def find_correct_choice(self, chosen_platform, unchosen_platform):
+        # compute distance between chosen_platform and goal_platform
+        dist_chosen = self.find_shortest_distance(chosen_platform, self.goal_position)
+        dist_unchosen = self.find_shortest_distance(unchosen_platform, self.goal_position)
+
+        if dist_chosen < dist_unchosen:
+            return 1
+        if dist_chosen > dist_unchosen:
+            return 0
+        if dist_chosen == dist_unchosen:
+            return None
+
+
     def check_adjacent(self, position1, position2):
         ''' checks if the 2 positions are adjacent. This is necessary
         to determine if we need to move the moving robots away from the

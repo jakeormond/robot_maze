@@ -15,17 +15,30 @@ from honeycomb_task.move_tracking_files import honeycomb_task_file_cleanup, crea
 from honeycomb_task.plot_paths import Plot
 import os
 import datetime
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import copy
 plt.ion
 
+################# SET REAL OR SIMULATION ###########################################
+sim = True
+####################################################################################
+
 # CONSTANTS
 min_platform_dura_new = 2  # minimum duration animal must be on new platform to register choice
 min_platform_dura_verify = 1  # minimum duration animal must be on  platform to verify choice
                             # after robots have made their initial turns 
-# top level folder
-top_dir = 'D:/testFolder'
+# top level folder, if on windows
+if os.name == 'nt':
+    top_dir = 'D:/testFolder'
+    yaml_dir = 'D:/testFolder/pico_robots/yaml'
+    map_dir = 'D:/testFolder/pico_robots/map'
+else:
+    top_dir = '/media/jake/LaCie'
+    yaml_dir =  '/home/jake/Documents/robot_test_folder'
+    map_dir = '/home/jake/Documents/robot_maze/workstation/map_files'
+
 # ask user to enter the animal numnber
 animal_num = input('Enter animal number: ')
 # get the date without the time
@@ -36,13 +49,10 @@ data_dir = os.path.join(top_dir, 'robot_maze_behaviour', f'Rat_{animal_num}', da
 create_directory(data_dir)
 
 # create robot instances in a dictionary
-# yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
-yaml_dir = 'D:/testFolder/pico_robots/yaml'
 robots = Robots.from_yaml(yaml_dir, orientations=[0, 0, 0])
 
 # load map and set goal position
 # platform coordinates are also stored in the map object
-map_dir = 'D:/testFolder/pico_robots/map'
 map = Map(directory=map_dir)
 map.set_goal_position(input('Enter goal position: '))
 
@@ -62,16 +72,17 @@ write_bonsai_crop_params(crop_nums, top_dir)
 # save initial crop params to trial_data
 trial_data.save_initial_crop_params(crop_nums)
 
-# create animal instance necessary for tracking
-HOST = '0.0.0.0'  # server's IP address
-PORT = 8000  # UDP port
-buffer_size = 1024
-n = 200  # Number of previous data points to store
-animal = Animal(HOST, PORT, buffer_size, n)
+if sim == False:
+    # create animal instance necessary for tracking
+    HOST = '0.0.0.0'  # server's IP address
+    PORT = 8000  # UDP port
+    buffer_size = 1024
+    n = 200  # Number of previous data points to store
+    animal = Animal(HOST, PORT, buffer_size, n)
 
-# tell user to start video, and then ephys, and then any 
-# button to start the trial
-input('\nStart video - press any key to continue')
+    # tell user to start video, and then ephys, and then any 
+    # button to start the trial
+    input('\nStart video - press any key to continue')
 
 # set some variables
 # difficulty = 'easy'
@@ -126,70 +137,74 @@ while True:
             # data from the robots, but probably not necessary
             # THIS SHOULD INCLUDE ONLY THE FIRST TURNS
             # robot positions are updated in this function
-            send_over_sockets_threads(robots, initial_turns)
+            if sim == False:
+                send_over_sockets_threads(robots, initial_turns)
             robots.update_orientations(initial_turns)  
             print(robots)
 
             # SO WE CAN MAKE SURE THE ANIMAL DIDN'T MOVE
             # monitor the tracking data coming from Bonsai to determine
             # when the animal's made its decision. 
-            verified_platform, _ = animal.find_new_platform(possible_platforms, start_platform, 
-                               map.platform_coordinates, crop_nums, min_platform_dura_verify, min_platform_dura_shake)
+            if sim == False:
+                verified_platform, _ = animal.find_new_platform(possible_platforms, start_platform, 
+                                map.platform_coordinates, crop_nums, min_platform_dura_verify, min_platform_dura_shake)
+              
+                if chosen_platform != verified_platform:
+                    print('Animal changed its mind!')
+                    print(f'new choice is platform {verified_platform}')
+                    
+                    # update the choice history
+                    trial_data.register_choice(verified_platform, chosen_platform)
+                    
+                    # update robots, the stationary robot becomes moving, and the 
+                    # the verified_platform robot becomes stationary
+                    stat_robot_key = robots.get_robot_key_at_position(verified_platform)
+                    robots.members[stat_robot_key].set_new_state('stationary')
 
+                    non_stat_robot_key = robots.get_robot_key_at_position(chosen_platform)
+                    robots.members[non_stat_robot_key].set_new_state('moving')
 
+                    # reset current_platform
+                    chosen_platform = verified_platform
 
+                    # recompute the paths and send the new commands
+                    paths.close_paths_plot()
+                    
+                    if choice_counter != 1 and chosen_platform == map.goal_position:
+                        paths = Paths(robots, map, task='move_away')
+                    else:
+                        paths = Paths(robots, map, choices=previous_choices)
 
-            if chosen_platform != verified_platform:
-                print('Animal changed its mind!')
-                print(f'new choice is platform {verified_platform}')
-                
-                # update the choice history
-                trial_data.register_choice(verified_platform, chosen_platform)
-                
-                # update robots, the stationary robot becomes moving, and the 
-                # the verified_platform robot becomes stationary
-                stat_robot_key = robots.get_robot_key_at_position(verified_platform)
-                robots.members[stat_robot_key].set_new_state('stationary')
-
-                non_stat_robot_key = robots.get_robot_key_at_position(chosen_platform)
-                robots.members[non_stat_robot_key].set_new_state('moving')
-
-                # reset current_platform
-                chosen_platform = verified_platform
-
-                # recompute the paths and send the new commands
-                paths.close_paths_plot()
-                
-                if choice_counter != 1 and chosen_platform == map.goal_position:
-                    paths = Paths(robots, map, task='move_away')
                 else:
-                    paths = Paths(robots, map, choices=previous_choices)
+                    print(f'Animal chose platform {int(verified_platform)}')
+                    start_platform = chosen_platform
+                    break
 
             else:
-                print(f'Animal chose platform {int(verified_platform)}')
                 start_platform = chosen_platform
+                verified_platform = chosen_platform
                 break
 
     # plot the paths
     # paths.plot_paths(robots, map)
     robot_path_plot.plot_paths(robots, map, paths.optimal_paths)
-    robots.update_positions(paths)  # the positions need to be update before the move so we can update the crop parameters
-    # get new crop parameters
-    if choice_counter == 1 or chosen_platform != map.goal_position: # don't get new crop if at goal because it's unnecessary
-        crop_nums = map.get_crop_nums(robots.get_positions()) # and platform positions may be outside map
-        write_bonsai_crop_params(crop_nums, top_dir) 
+    robots.update_positions(paths)  # the positions need to be updateD before the move so we can update the crop parameters
     
-    # send the remaining commands to robots.
-    send_over_sockets_threads(robots, paths)      
+    # get new crop parameters
+    if sim == False:
+        if choice_counter == 1 or chosen_platform != map.goal_position: # don't get new crop if at goal because it's unnecessary
+            crop_nums = map.get_crop_nums(robots.get_positions()) # and platform positions may be outside map
+            write_bonsai_crop_params(crop_nums, top_dir) 
+    
+        # send the remaining commands to robots.
+        send_over_sockets_threads(robots, paths)      
 
     # if at the goal, then trial is done
     if choice_counter != 1:
         if chosen_platform == map.goal_position:
             print('Animal reached goal!')
             print('End of trial')
-            break   
-
-      
+            break         
 
     # start the choice and save crop params
     trial_data.start_choice(start_platform)
@@ -203,22 +218,27 @@ while True:
     choice_platforms.remove(start_platform)
     print(f'Choice platforms are {int(choice_platforms[0])} and {int(choice_platforms[1])}')
 
-
     # get the animal's choice, rotating the platform if it's not choosing
-    while start_platform == chosen_platform:    
-        chosen_platform, unchosen_platform = animal.find_new_platform(possible_platforms, start_platform, 
-                                map.platform_coordinates, crop_nums, min_platform_dura_new, min_platform_dura_shake)
-        
-        if chosen_platform == start_platform:
-            turn_path = Paths(robots, map, stat_turn=True)
-            print('animal refusing to move')
-            send_over_sockets_threads(robots, turn_path)
-            robots.update_orientations(turn_path)  
-            min_platform_dura_shake = 1 # decrease the wait time, will be reset at the next choice
+    if sim == False:
+        while start_platform == chosen_platform:    
+            chosen_platform, unchosen_platform = animal.find_new_platform(possible_platforms, start_platform, 
+                                    map.platform_coordinates, crop_nums, min_platform_dura_new, min_platform_dura_shake)
+            
+            if chosen_platform == start_platform:
+                turn_path = Paths(robots, map, stat_turn=True)
+                print('animal refusing to move')
+                send_over_sockets_threads(robots, turn_path)
+                robots.update_orientations(turn_path)  
+                min_platform_dura_shake = 1 # decrease the wait time, will be reset at the next choice
+
+    else: 
+        # randomly pick one platform from the choice platforms to be the chosen platform, and the other to be the unchosen platform
+        chosen_ind = np.random.randint(0, 2)
+        unchosen_ind = 1 - chosen_ind
+        chosen_platform = choice_platforms[chosen_ind]
+        unchosen_platform = choice_platforms[unchosen_ind]
 
     print(f'Animal chose platform {int(chosen_platform)}')
-    trial_data.register_choice(chosen_platform, unchosen_platform)
-    choice_counter += 1    
     
     # update robot states
     stat_robot_key = robots.get_robot_key_at_position(chosen_platform)
@@ -226,6 +246,20 @@ while True:
 
     non_stat_robot_key = robots.get_robot_key_at_position(start_platform)
     robots.members[non_stat_robot_key].set_new_state('moving')
+        
+    # determine if choice was correct
+    correct_choice = map.find_correct_choice(chosen_platform, unchosen_platform)
+    if correct_choice:
+        # find the robot that is at the correct position
+        correct_robot = robots.get_robot_key_at_position(chosen_platform)
+    else:
+        correct_robot = robots.get_robot_key_at_position(unchosen_platform)
+
+    trial_data.register_choice(chosen_platform, unchosen_platform, \
+                correct_choice, correct_robot, stat_robot_key)
+    choice_counter += 1    
+    
+    
 
     # close plot of paths
     # paths.close_paths_plot()
@@ -237,9 +271,10 @@ while True:
 trial_data.save_choices(data_dir)
 
 # stop video so that video and tracking files can be moved for storage
-input('stop video - press any key to continue')
+if sim == False:
+    input('stop video - press any key to continue')
 
-# move the tracking files to short and long term storage, removing them from 
-# acquisition directory
-server_dir = 'X:/Jake/robot_maze'
-honeycomb_task_file_cleanup(animal_num, trial_data, top_dir, data_dir, date_str, server_dir)
+    # move the tracking files to short and long term storage, removing them from 
+    # acquisition directory
+    server_dir = 'X:/Jake/robot_maze'
+    honeycomb_task_file_cleanup(animal_num, trial_data, top_dir, data_dir, date_str, server_dir)

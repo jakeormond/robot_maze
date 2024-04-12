@@ -28,7 +28,8 @@ class Choices:
         if self.data is None:
              self.data = pd.DataFrame(columns=['start_time', 'choice_time', \
                             'start_pos', 'chosen_pos', 'unchosen_pos', \
-                            'crop_x', 'crop_y', 'crop_width', 'crop_height'])
+                            'crop_x', 'crop_y', 'crop_width', 'crop_height', 'correct_choice', \
+                                'correct_robot', 'chosen_robot'])
         
         # initialize number of choices to 0
         self.num_choices = 0
@@ -44,7 +45,7 @@ class Choices:
         # save the start position to row 'num_choices' in column 'start_pos'
         self.data.loc[self.num_choices, 'start_pos'] = start_pos
 
-    def register_choice(self, chosen_pos, unchosen_pos):
+    def register_choice(self, chosen_pos, unchosen_pos, correct_choice, correct_robot, stat_robot_key):
         # save the choice time to row 'num_choices' in column 'choice_time'
         curr_time = dt.datetime.now().strftime("%H:%M:%S.%f")[:-3]
         self.data.loc[self.num_choices, 'choice_time'] = curr_time
@@ -52,6 +53,14 @@ class Choices:
         self.data.loc[self.num_choices, 'chosen_pos'] = chosen_pos
         # save the unchosen position to row 'num_choices' in column 'unchosen_pos'
         self.data.loc[self.num_choices, 'unchosen_pos'] = unchosen_pos
+
+        self.data.loc[self.num_choices, 'correct_choice'] = correct_choice
+
+        self.data.loc[self.num_choices, 'correct_robot'] = correct_robot
+
+        self.data.loc[self.num_choices, 'chosen_robot'] = stat_robot_key
+
+
 
     def save_choices(self, data_dir):
         # save the choice history to file

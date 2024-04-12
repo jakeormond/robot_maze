@@ -22,10 +22,8 @@ plt.ion
 
 # CONSTANTS
 min_platform_dura_new = 2  # minimum duration animal must be on new platform to register choice
-min_platform_dura_shake = 4 # duration animal must remain on the stationary platform before it gets turned or shaken
 min_platform_dura_verify = 1  # minimum duration animal must be on  platform to verify choice
                             # after robots have made their initial turns 
-
 # top level folder
 top_dir = 'D:/testFolder'
 # ask user to enter the animal numnber
@@ -86,6 +84,9 @@ start_platform = robots.members['robot1'].position
 robot_path_plot = Plot()
 
 while True:
+
+    min_platform_dura_shake = 4 # duration animal must remain on the stationary platform before it gets turned or shaken
+
     # if animal is at goal, we just need to move the other 2 robots away
     if choice_counter != 1 and chosen_platform == map.goal_position:
             paths = Paths(robots, map, task='move_away')
@@ -213,7 +214,7 @@ while True:
             print('animal refusing to move')
             send_over_sockets_threads(robots, turn_path)
             robots.update_orientations(turn_path)  
-
+            min_platform_dura_shake = 1 # decrease the wait time, will be reset at the next choice
 
     print(f'Animal chose platform {int(chosen_platform)}')
     trial_data.register_choice(chosen_platform, unchosen_platform)

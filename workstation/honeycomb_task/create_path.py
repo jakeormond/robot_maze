@@ -39,8 +39,6 @@ class Paths:
             
             return
 
-
-
         if task == 'task':       
             if next_positions is None:
                 # pick next positions
@@ -718,15 +716,18 @@ def turn_command(robot):
     # get starting position and direction
     start_direction = robot.orientation
 
-    command = [1]
-    command_string = {f'robot{robot_id}': [int_to_string_command(command)]}
-    subcommands = {f'robot{robot_id}': [command_string[f'robot{robot_id}']]}
+    n_lines_to_turn = 1
+    # command = [n_lines_to_turn]
+    command = [[n_lines_to_turn], [6-n_lines_to_turn]]
+    command_string = {f'robot{robot_id}': [int_to_string_command(command[0]), int_to_string_command(command[1])]}
+    subcommands = {f'robot{robot_id}': None}
 
-    direction = start_direction + 60
+    direction = start_direction + n_lines_to_turn*60
     if direction == 360:
         direction = 0
 
-    suborientations = {f'robot{robot_id}': [[direction]]}   
+    # suborientations = {f'robot{robot_id}': [[direction]]}   
+    suborientations = {f'robot{robot_id}': [[direction, start_direction]]}   
 
     return command_string, subcommands, suborientations
 

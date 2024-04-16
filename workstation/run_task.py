@@ -77,6 +77,8 @@ input('\nStart video - press any key to continue')
 # difficulty = 'easy'
 difficulty = 'hard'
 
+spin_flag = False
+
 # MAIN LOOP
 choice_counter = 1
 start_platform = robots.members['robot1'].position
@@ -137,15 +139,8 @@ while True:
                                map.platform_coordinates, crop_nums, min_platform_dura_verify, min_platform_dura_shake)
 
 
-
-
-            if chosen_platform != verified_platform:
-                print('Animal changed its mind!')
-                print(f'new choice is platform {verified_platform}')
-                
-                # update the choice history
-                trial_data.register_choice(verified_platform, chosen_platform)
-                
+            if verified_platform == start_platform: # animal moved back to starting platform
+                print('Animal refusing to move')
                 # update robots, the stationary robot becomes moving, and the 
                 # the verified_platform robot becomes stationary
                 stat_robot_key = robots.get_robot_key_at_position(verified_platform)
@@ -153,9 +148,41 @@ while True:
 
                 non_stat_robot_key = robots.get_robot_key_at_position(chosen_platform)
                 robots.members[non_stat_robot_key].set_new_state('moving')
+                
+                while verified_platform == start_platform:   
 
-                # reset current_platform
-                chosen_platform = verified_platform
+                    spin_flag = True                
+
+                    turn_path = Paths(robots, map, stat_turn=True)
+                    send_over_sockets_threads(robots, turn_path)
+                    # robots.update_orientations(turn_path)  
+                    min_platform_dura_shake = 1
+
+                    verified_platform, _ = animal.find_new_platform(possible_platforms, start_platform, 
+                               map.platform_coordinates, crop_nums, min_platform_dura_verify, min_platform_dura_shake)  
+
+                start_robot_key = robots.get_robot_key_at_position(start_platform)
+                robots.members[stat_robot_key].set_new_state('moving')         
+
+
+            if chosen_platform != verified_platform or spin_flag:
+                print('Animal changed its mind!')
+                print(f'new choice is platform {verified_platform}')
+
+                # update robots, the stationary robot becomes moving, and the 
+                # the verified_platform robot becomes stationary
+                stat_robot_key = robots.get_robot_key_at_position(verified_platform)
+                robots.members[stat_robot_key].set_new_state('stationary')
+                
+                # update the choice history
+                if chosen_platform != verified_platform:
+                    trial_data.register_choice(verified_platform, chosen_platform)
+                
+                    non_stat_robot_key = robots.get_robot_key_at_position(chosen_platform)
+                    robots.members[non_stat_robot_key].set_new_state('moving')
+
+                    # reset current_platform
+                    chosen_platform = verified_platform
 
                 # recompute the paths and send the new commands
                 paths.close_paths_plot()
@@ -164,10 +191,13 @@ while True:
                     paths = Paths(robots, map, task='move_away')
                 else:
                     paths = Paths(robots, map, choices=previous_choices)
+                
+                spin_flag = False
 
             else:
                 print(f'Animal chose platform {int(verified_platform)}')
                 start_platform = chosen_platform
+                spin_flag = False
                 break
 
     # plot the paths
@@ -205,6 +235,9 @@ while True:
 
 
     # get the animal's choice, rotating the platform if it's not choosing
+
+    if choice_counter == 1:
+        chosen_platform = start_platform
     while start_platform == chosen_platform:    
         chosen_platform, unchosen_platform = animal.find_new_platform(possible_platforms, start_platform, 
                                 map.platform_coordinates, crop_nums, min_platform_dura_new, min_platform_dura_shake)
@@ -213,7 +246,7 @@ while True:
             turn_path = Paths(robots, map, stat_turn=True)
             print('animal refusing to move')
             send_over_sockets_threads(robots, turn_path)
-            robots.update_orientations(turn_path)  
+            # robots.update_orientations(turn_path)  
             min_platform_dura_shake = 1 # decrease the wait time, will be reset at the next choice
 
     print(f'Animal chose platform {int(chosen_platform)}')

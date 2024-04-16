@@ -59,7 +59,7 @@ class Animal:
             self.data_receiver_thread = threading.Thread(target=self._receive_data, 
                                             args=(possible_platforms, start_platform,
                                                     platform_coordinates, crop_coordinates,
-                                                    min_platform_dura))
+                                                    min_platform_dura, min_platform_dura_shake))
             self.data_receiver_thread.start()
 
     def _start_manual_input_thread(self, possible_platforms, start_platform):
@@ -140,7 +140,7 @@ class Animal:
                                 else:
                                     break
                             
-                    # if animal has chosen a new platform
+                        # if animal has chosen a new platform
                         elif target_platform != start_platform:
                             for i in range(1, len(recent_data)):
                                 if recent_data[i][0] == target_platform:
@@ -358,7 +358,7 @@ if __name__ == "__main__":
 
     receiver = Animal(host, port, buffer_size, n)
 
-    receiver.find_new_platform(possible_platforms, 61, platform_coordinates, crop_coor, 1)
+    receiver.find_new_platform(possible_platforms, 61, platform_coordinates, crop_coor, 1, min_platform_dura_shake)
 
     current_platform = receiver.get_current_platform()
     print(current_platform)

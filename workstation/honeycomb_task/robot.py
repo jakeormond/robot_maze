@@ -165,7 +165,7 @@ class Robots:
         return start_platform, positions
     
     def update_orientations(self, initial_turns):
-        for r in initial_turns.optimal_paths:
+        for r in initial_turns.orientations:
             self.members[r].set_new_orientation(initial_turns.orientations[r][-1][-1])
         
         stat_robot = self.get_stat_robot()

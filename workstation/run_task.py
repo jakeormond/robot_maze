@@ -46,6 +46,10 @@ map_dir = 'D:/testFolder/pico_robots/map'
 map = Map(directory=map_dir)
 map.set_goal_position(input('Enter goal position: '))
 
+# ask user for the other choice position
+other_choice = int(input('Enter the other choice position: '))
+next_positions = [map.goal_position, other_choice]
+
 # load previous choices
 previous_trial_choices = Choices(directory=data_dir, goal=map.goal_position)   
 # initialize new data storage
@@ -108,7 +112,7 @@ while True:
 
 
         # pick next platforms and construct paths as well as commands and durations
-        paths = Paths(robots, map, choices=previous_choices)
+        paths = Paths(robots, map, next_positions=next_positions, choices=previous_choices)
 
     # if this is the trial start, we can send the full commands,
     # otherwise, we need to turn the robots, and then make sure 
@@ -190,7 +194,7 @@ while True:
                 if choice_counter != 1 and chosen_platform == map.goal_position:
                     paths = Paths(robots, map, task='move_away')
                 else:
-                    paths = Paths(robots, map, choices=previous_choices)
+                    paths = Paths(robots, map, next_positions=next_positions, choices=previous_choices)
                 
                 spin_flag = False
 

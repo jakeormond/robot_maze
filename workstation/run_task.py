@@ -46,6 +46,7 @@ map_dir = 'D:/testFolder/pico_robots/map'
 map = Map(directory=map_dir)
 map.set_goal_position(input('Enter goal position: '))
 
+
 # ask user for the other choice position
 other_choice = int(input('Enter the other choice position: '))
 next_positions = [map.goal_position, other_choice]

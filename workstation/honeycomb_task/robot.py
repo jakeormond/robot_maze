@@ -97,9 +97,9 @@ class Robots:
                 robots.members[f'robot{id}'].\
                         set_new_position(positions[i])
             
-            if orientations is None:       
-                robots.members[f'robot{id}'].\
-                        set_new_orientation(int(input(f'Robot {id} - Enter new orientation (0, 60, 120, 180, 240, 300): ')))
+            if orientations is None or i > 0:      
+                    robots.members[f'robot{id}'].\
+                            set_new_orientation(int(input(f'Robot {id} - Enter new orientation (0, 60, 120, 180, 240, 300): ')))
             else:
                 robots.members[f'robot{id}'].\
                         set_new_orientation(orientations[i])

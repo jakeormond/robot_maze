@@ -74,8 +74,8 @@ animal = Animal(HOST, PORT, buffer_size, n)
 input('\nStart video - press any key to continue')
 
 # set some variables
-# difficulty = 'easy'
-difficulty = 'hard'
+difficulty = 'easy'
+# difficulty = 'hard'
 
 spin_flag = False
 

@@ -29,7 +29,17 @@ class Paths:
             self.optimal_paths = select_optimal_paths(self.all_paths, robots, self.next_plats, map)
 
         elif task == 'task_2goal':
-            if next_positions is None:
+            # if stationary robot is at the mirror_goal position, then use get_all_paths
+            stat_robot = robots.get_stat_robot()
+            stat_robot_pos = stat_robot.position
+
+            # get the mirror goal position
+            mirror_goal = map.mirror_position
+
+            if stat_robot_pos == mirror_goal:
+                self.next_plats = get_next_positions(robots, map, choices, 'hard')
+
+            elif next_positions is None:
                 # pick next positions
                 self.next_plats = get_next_positions_2goal(robots, map, choices)
 
@@ -365,8 +375,8 @@ def get_next_positions_2goal(robots, map, choices):
         p0m_dist = map.cartesian_distance(p[0], map.mirror_position)
         p1m_dist = map.cartesian_distance(p[1], map.mirror_position)
 
-        if (p0_dist > stat_dist or p1m_dist > statm_dist) and \
-            (p1_dist > stat_dist or p0m_dist > statm_dist):
+        if (p0_dist >= stat_dist or p1m_dist >= statm_dist) and \
+            (p1_dist >= stat_dist or p0m_dist >= statm_dist):
             # delete row from possible_pairs
             possible_pairs = np.delete(possible_pairs, row, axis=0)
             n_possible_pairs -= 1
@@ -375,27 +385,27 @@ def get_next_positions_2goal(robots, map, choices):
 
     # find what, if any, choices have previously been made from stat_robot_pos using 
     # the choices.data pandas dataframe
-    if choices != None:
-        choicesFromStart = choices.data[choices.data['start_pos'] == stat_robot_pos]
-        # extract the chosen and unchosen positions to a numpy array and remove 
-        # any repeated pairs
-        n_prev_pairs = 0
-        if choicesFromStart.empty == False:
-            previous_pairs = choicesFromStart[['chosen_pos', 'unchosen_pos']].to_numpy()
-            previous_pairs = previous_pairs.astype(int)
-            for p in range(previous_pairs.shape[0]):
-                previous_pairs[p] = np.sort(previous_pairs[p])
-            # remove duplicate pairs
-            previous_pairs = np.unique(previous_pairs, axis=0)
-            n_prev_pairs = previous_pairs.shape[0]
+    # if choices != None:
+    #     choicesFromStart = choices.data[choices.data['start_pos'] == stat_robot_pos]
+    #     # extract the chosen and unchosen positions to a numpy array and remove 
+    #     # any repeated pairs
+    #     n_prev_pairs = 0
+    #     if choicesFromStart.empty == False:
+    #         previous_pairs = choicesFromStart[['chosen_pos', 'unchosen_pos']].to_numpy()
+    #         previous_pairs = previous_pairs.astype(int)
+    #         for p in range(previous_pairs.shape[0]):
+    #             previous_pairs[p] = np.sort(previous_pairs[p])
+    #         # remove duplicate pairs
+    #         previous_pairs = np.unique(previous_pairs, axis=0)
+    #         n_prev_pairs = previous_pairs.shape[0]
 
-            if n_prev_pairs != n_possible_pairs: # remove common pairs
-                for p in previous_pairs:
-                    if p in possible_pairs:
-                        # find row index of p in possible pairs
-                        row_ind = np.where(np.all(possible_pairs == p, axis=1))[0][0]
-                        # delete row from possible_pairs
-                        possible_pairs = np.delete(possible_pairs, row_ind, axis=0)
+    #         if n_prev_pairs != n_possible_pairs: # remove common pairs
+    #             for p in previous_pairs:
+    #                 if p in possible_pairs:
+    #                     # find row index of p in possible pairs
+    #                     row_ind = np.where(np.all(possible_pairs == p, axis=1))[0][0]
+    #                     # delete row from possible_pairs
+    #                     possible_pairs = np.delete(possible_pairs, row_ind, axis=0)
     
     # randomly reorder possible_pairs and select next positions
     np.random.shuffle(possible_pairs)

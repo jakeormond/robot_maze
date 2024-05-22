@@ -823,14 +823,15 @@ def paths_to_commands(robots, paths, map):
 
     # check if the robots both have any zero commands before 
     # they start moving (i.e. if they are already in the correct positions)   
-    while True:
-        if commands[robot_list[0]][0] == [0] and commands[robot_list[1]][0] == [0]:
-            for key in commands.keys():
-                # remove the first command from each list
-                command_strings[key] = command_strings[key][1:]
-                commands[key] = commands[key][1:]
-        else:
-            break
+    if len(robot_list) > 1:
+        while True:
+            if commands[robot_list[0]][0] == [0] and commands[robot_list[1]][0] == [0]:
+                for key in commands.keys():
+                    # remove the first command from each list
+                    command_strings[key] = command_strings[key][1:]
+                    commands[key] = commands[key][1:]
+            else:
+                break
             
     return command_strings, commands, orientations
 

@@ -38,7 +38,7 @@ class Animal:
     def find_new_platform(self, possible_platforms, start_platform, 
                             platform_coordinates, crop_coordinates, min_platform_dura):
         
-        print("Finding new platform...")
+        # print("Finding new platform...")
 
         self._start_data_receiver(possible_platforms, start_platform, 
                             platform_coordinates, crop_coordinates, min_platform_dura)        
@@ -115,8 +115,7 @@ class Animal:
                     
                     # just continue if we can't find the animal
                     if target_platform is None:
-                        print('\nhaving difficulty finding the animal')
-                        print('\npress s to manually register the choice')
+                        print('\nhaving difficulty finding the animal\npress s to manually register the choice')
 
                         continue
 
@@ -141,12 +140,14 @@ class Animal:
                     print("Socket timeout error: Unable to receive data. Retrying...")
                     # You can add more specific error handling or retry logic heres
 
+                    time.sleep(0.01)  # Sleep for 100ms to prevent high CPU usage
+
                 except Exception as e:
                     # Handle other exceptions here
                     print(f"Error: {e}")
                     # You can add more specific error handling or logging here
                 
-                time.sleep(0.01)  # Sleep for 100ms to prevent high CPU usage
+                    time.sleep(0.01)  # Sleep for 100ms to prevent high CPU usage
 
    
     def _listen_for_key(self, possible_platforms, start_platform):      

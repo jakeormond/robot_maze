@@ -137,7 +137,7 @@ def handle_server(robot, string_input, data_queue):
     return 
 
 
-def send_over_sockets_serial(robots, paths, ordered_keys):
+def send_over_sockets_serial(robots, paths, ordered_keys, num_commands=3):
     # get commands
     commands = paths.command_strings
     # get robot keys
@@ -145,9 +145,9 @@ def send_over_sockets_serial(robots, paths, ordered_keys):
 
     data_queue = queue.Queue() # to collect the decoded data from handle_server
 
-    NUM_COMMANDS = 3
+    # NUM_COMMANDS = 3
 
-    for c in range(NUM_COMMANDS):
+    for c in range(num_commands):
         for key in ordered_keys:
             handle_server(robots.members[key], 
                           commands[key][c], data_queue)

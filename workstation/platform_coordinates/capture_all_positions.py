@@ -9,6 +9,10 @@ fixed later if necessary by adding in an intial up_down_direction variable
 (telling the robots if they initially need to move up and to the side, or 
 down and to the side).
 '''
+
+import sys
+sys.path.insert(0, 'C:/Users/LabUser/Documents/robot_maze/workstation')
+
 import numpy as np
 from honeycomb_task.configuration import read_yaml
 from honeycomb_task.robot import Robot, Robots
@@ -89,7 +93,7 @@ if __name__ == '__main__':
     directory = 'D:/testFolder/pico_robots/map'
     # platform_map = open_map('platform_map', directory)
     map = Map(directory=directory)
-    # start_platform = 41
+    start_platform = 41
     stop_platform = 212
     # extra_row = 1
 
@@ -107,12 +111,14 @@ if __name__ == '__main__':
 
     # start_pos is a 3 element vector taken using current_rows and current_col as indices into platform_map
     # start_pos = map.restricted_map[[0, 2, 4], 0].astype(int)
-    # start_pos = np.array([160, 179, 198])
-    start_pos = np.array([213])
+    # start_pos = np.array([103, 122, 141])
+    # start_pos = np.array([155, 174, 193])
+    start_pos = np.array([217])
     print('start positions: ', start_pos)
     # orientations is a 3 element vector of repeating values
-    # orientations = np.array([30, 30, 30])
-    orientations = np.array([240])
+    # orientations = np.array([0, 0, 0])
+    # orientations = np.array([180, 180, 180])
+    orientations = np.array([180])
     print('orientations: ', orientations)
 
     # create the robot instances
@@ -163,7 +169,7 @@ if __name__ == '__main__':
         robots = robots.get_moving_robots()
 
         # get the next paths
-        paths = Paths(robots, map, next_positions=next_positions)
+        paths = Paths(robots, map, next_positions=next_positions, task='direct')
 
         # send commands to robots
         if order == 'ascending':
@@ -171,13 +177,14 @@ if __name__ == '__main__':
         else:
             ordered_list = robot_list[::-1]
             
-        send_over_sockets_serial(robots, paths, ordered_list)
+        send_over_sockets_serial(robots, paths, ordered_list, num_commands=2)
                 
         # assign next positions and orientations to robots
-        for r in range(n_robots):
-            robots.members[robot_list[r]].set_new_position(int(next_positions[r]))
-            robots.members[robot_list[r]].set_new_orientation(paths.final_orientations[robot_list[r]])
+        # for r in range(n_robots):
+        #     robots.members[robot_list[r]].set_new_position(int(next_positions[r]))
+        #     robots.members[robot_list[r]].set_new_orientation(paths.final_orientations[robot_list[r]])
         
+        robots.update_positions_v2(paths)
         
 
 

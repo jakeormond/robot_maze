@@ -19,8 +19,6 @@ import keyboard
 import os
 import csv
 
-MIN_PLATFORM_DURA = 2 # length of time animal needs to be on 
-# new platform before choice is registered
 
 class Animal:
     def __init__(self, host, port, buffer_size, n):
@@ -131,6 +129,7 @@ class Animal:
                                     new_platform = target_platform
                                     self.current_platform = new_platform
                                     self.next_platform_event.set()
+                                    print(f'min duration set to {min_platform_dura}, actual duration is {duration}')
                                     return 
                             else:
                                 break

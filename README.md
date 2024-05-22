@@ -8,7 +8,7 @@ In this new version of the maze, the platforms are affixed to line-following rob
 
 The robot is custom-designed, using a Pi Pico W microcontroller to receive commands over WiFi and send commands to the motors. The floor is black with a pattern of white lines, which the robots detect using two Vishay TCRT5000 reflective sensors. This pattern allows the robots to position themselves at specific locations. 
 
-![robots navigating along line patter](./images/robot_path_examples.jpg)
+![robots navigating along line pattern](./images/robot_path_examples.jpg)
 
 Figure: The three robots are depicted in red, blue, and green. The green robot is the stationary robot, meaning this is the last chosen/currently occupied robot. The red and blue robots drive along the depicted trajectories to provide the animal with the next choice. Depending on the choice made, either the red or blue will become the stationary robot, and the other two robots will then drive to new positions to present the animal with the next choice. 
 

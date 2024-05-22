@@ -54,11 +54,14 @@ def send_over_socket(string_input, HOST, PORT):
     return received_data
             
 
-def handle_server(robot, string_input, data_queue):
+def handle_server(robot, string_input, data_queue, start_time=None):
     
     server_address = (robot.ip_address, robot.port)
 
+    start_time_socket = time.time()
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # stop_time_socket = time.time() - start_time_socket
+    # print(f"Socket creation took {stop_time_socket} seconds")
     # Set a timeout (e.g., 10 seconds) on the socket
     s.settimeout(10)
 
@@ -68,6 +71,8 @@ def handle_server(robot, string_input, data_queue):
         try:
             s.connect(server_address)
             s.sendall(bytes_to_send)
+            stop_time_socket = time.time() - start_time_socket
+            print(f"Sent {string_input} to robot{robot.id} in {stop_time_socket} seconds")
             break
         except (socket.error, ConnectionRefusedError) as e:
             print(f"Error connecting to robot{robot.id}: {e}")
@@ -159,7 +164,7 @@ def send_over_sockets_serial(robots, paths, ordered_keys, num_commands=3):
 
     return 
 
-def send_over_sockets_threads(robots, paths, print_output=False):
+def send_over_sockets_threads(robots, paths, start_time=None, print_output=False):
      # get commands
     commands = paths.command_strings
     # get robot keys
@@ -174,7 +179,7 @@ def send_over_sockets_threads(robots, paths, print_output=False):
         for key in robot_keys:
             t = threading.Thread(target=handle_server, 
                                  args=(robots.members[key], 
-                                commands[key][c], data_queue))
+                                commands[key][c], data_queue), kwargs={'start_time': start_time})
             
             t.start()
             threads.append(t)

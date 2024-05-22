@@ -7,6 +7,7 @@ the shortest path, a path that avoids other robots or obstacles, etc.
 import numpy as np
 import copy
 from .platform_map import Map
+import time
 
 # CreatePath should take a start and end position, and optionally a 
 # list of positions to avoid
@@ -17,16 +18,25 @@ class Paths:
         if task == 'task':       
             if next_positions is None:
                 # pick next positions
+                start_time  = time.time()
                 self.next_plats = get_next_positions(robots, map, choices, difficulty)
+                stop_time = time.time() - start_time
+                print(f'get_next_positions time: {stop_time}')
 
             else:
                 self.next_plats = next_positions
                 
             # get all possible paths
+            start_time = time.time()
             self.all_paths = get_all_paths(robots, self.next_plats, map)
+            stop_time = time.time() - start_time
+            print(f'get_all_paths time: {stop_time}')
 
             # select the optimal paths
+            start_time = time.time()
             self.optimal_paths = select_optimal_paths(self.all_paths, robots, self.next_plats, map)
+            stop_time = time.time() - start_time
+            print(f'select_optimal_paths time: {stop_time}')
 
         elif task == 'task_2goal':
             # if stationary robot is at the mirror_goal position, then use get_all_paths
@@ -554,7 +564,6 @@ def select_optimal_paths(paths, robots, next_plats, map):
     measured as the length of the longer of the two paths. 
     
     '''
-    stat_robot = robots.get_stat_robot()
     moving_robots = robots.get_moving_robots()
     moving_robot_ids = list(moving_robots.members.keys())
     directions = 'clockwise', 'anticlockwise'
@@ -573,10 +582,8 @@ def select_optimal_paths(paths, robots, next_plats, map):
         p2 = next_plats[0] if p == next_plats[1] else next_plats[1]
 
         # get all paths from paths[moving_robot_ids[0]][f'to_plat{p}'] 
-        start1 = robots.members[moving_robot_ids[0]].position
         paths1 = paths[moving_robot_ids[0]][f'to_plat{p}']
 
-        start2 = robots.members[moving_robot_ids[1]].position
         paths2 = paths[moving_robot_ids[1]][f'to_plat{p2}']
         
 

@@ -54,5 +54,6 @@ def read_yaml(yaml_dir):
 if __name__ == '__main__':
     configuration = create_yaml()
 
-    yaml_dir = '/home/jake/Documents/robot_test_folder'
+    # yaml_dir = '/home/jake/Documents/robot_test_folder'
+    yaml_dir = 'C:/Users/Jake/Documents/robot_code/yaml'
     save_yaml(configuration, yaml_dir)

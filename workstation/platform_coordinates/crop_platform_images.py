@@ -94,7 +94,8 @@ def crop_platform_images(image_paths):
     
 # main method
 if __name__ == "__main__":
-    image_path = '/home/jake/Documents/robot_maze_platform_images'
+    # image_path = '/home/jake/Documents/robot_maze/platform_images'
+    image_path = 'C:/Users/Jake/Documents/robot_maze/platform_images'
 
     # find any images that are already cropped, so we don't duplicate our effort!
     cropped_files = [f for f in os.listdir(image_path) if f[-11:] == 'cropped.jpg']

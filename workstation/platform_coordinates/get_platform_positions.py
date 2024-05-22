@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import pickle
 import os
+import re
 
 
 def get_platform_positions(image_path=None):
@@ -15,7 +16,8 @@ def get_platform_positions(image_path=None):
     
     if image_path is None:
         # image_path = 'c:/Users/Jake/Documents/robot_maze/platform_images_22-09-2023'
-        image_path = '/home/jake/Documents/robot_maze_platform_images'
+        # image_path = '/home/jake/Documents/robot_maze_platform_images'
+        image_path = 'C:/Users/Jake/Documents/robot_maze/platform_images'
 
     # get all files in the directory that begin with "platforms", 
     # and end with "cropped.jpg"
@@ -28,10 +30,11 @@ def get_platform_positions(image_path=None):
 
         # extract the platform numbers from the file name
         # split the filename by the underscore
-        i_split = image_name.split('.')[0].split('_')[1:]
+        # i_split = image_name.split('.')[0].split('_')[1:]
+        i_split = image_name.split('_')[1:-1]
         # remove the string 'cropped' from the list
-        i_split.remove('cropped')
-        platforms = [int(i) for i in i_split]
+        # i_split.remove('cropped')
+        platforms = [int(float(i)) for i in i_split]
         # sort the list
         platforms.sort()
 
@@ -157,7 +160,8 @@ def draw_platforms_on_uncropped(directory=None):
     '''
     if directory is None:
         # directory = '/home/jake/Documents/robot_maze_platform_images'
-        directory = 'D:/testFolder/pico_robots/platform_images'
+        # directory = 'D:/testFolder/pico_robots/platform_images'
+        directory = 'C:/Users/Jake/Documents/robot_maze/platform_images'
 
     # load the platform coordinates
     with open(directory + '/platform_coordinates_cropped.pickle', 'rb') as handle:
@@ -184,7 +188,14 @@ def draw_platforms_on_uncropped(directory=None):
 
         # get the platform numbers from the file name
         # split the filename by the underscore
-        platforms = [int(digit) for digit in (image_name.split('.')[0].split('_')[1:])]
+        # platforms = [int(digit) for digit in (image_name.split('.')[0].split('_')[1:])]
+
+        i_split = re.split('[_.]', image_name)
+        # remove any strings starting with 'plat', 'j', or equal to '0'
+        i_split = [i for i in i_split if not re.match(r'plat|j|0', i)]
+        platforms = [int(float(i)) for i in i_split]
+        # sort the list
+        platforms.sort()
 
         # loop through the platforms and draw them on the image
         for p in platforms:

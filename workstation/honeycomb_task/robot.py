@@ -9,8 +9,10 @@ send a command to the robot and receive data from it (note that this method
 may ultimately be implemented independently of the robot class to deal with 
 multiple robots at once)
 '''
+import sys
+sys.path.append('/home/jake/Documents/robot_maze/workstation')
 
-from .configuration import read_yaml
+from honeycomb_task.configuration import read_yaml
 import copy
 
 

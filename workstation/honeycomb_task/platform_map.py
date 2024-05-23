@@ -96,6 +96,30 @@ class Map:
             if not np.isnan(common_axes[key]).all():
                 return key, common_axes[key]
         return None, None
+    
+
+    def get_common_axis_from_positions(self, positions):
+        ''' determines what axes the robots have in common.'''
+        # find if all keys in axes are nan, if so, then all robots are on different axes
+        # and there is no common axis
+        for i, p in enumerate(positions):
+            axes = self.get_axes(p)
+            if i == 0:
+                common_axes = axes
+            else:
+                for key in axes.keys():
+                    if axes[key] == common_axes[key]:
+                        continue
+                    else:
+                        common_axes[key] = np.nan
+
+        # if any common_axes entry is not nan, return it
+        for key in common_axes.keys():
+            if not np.isnan(common_axes[key]).all():
+                return key, common_axes[key]
+        return None, None
+
+
 
     def straight_path(self, position1, position2):
         return straight_path(position1, position2, self)
@@ -286,7 +310,37 @@ class Map:
             crop_y = resolution[1] - window_size[1]
         
         return (int(crop_x), int(crop_y), window_size[0], window_size[1])   
-       
+    
+    def get_shape(self, robots):
+
+        # check if they are on line
+        common_axis = self.get_common_axis(robots)
+        if common_axis[0] is not None:
+            return 'line'
+        
+        # check if they are in a triangle shape, i.e. all distances between them are 1
+        else:
+            positions = robots.get_positions()
+            for i in range(2):
+                for j in range(i+1, 3):
+                    if self.find_shortest_distance(positions[i], positions[j]) != 1:
+                        return 'boomerang'
+            return 'triangle'
+        
+    def get_shape_from_positions(self, positions):
+        # check if they are on line
+        common_axis = self.get_common_axis_from_positions(positions)
+        if common_axis[0] is not None:
+            return 'line'
+        
+        # check if they are in a triangle shape, i.e. all distances between them are 1
+        else:
+            for i in range(2):
+                for j in range(i+1, 3):
+                    if self.find_shortest_distance(positions[i], positions[j]) != 1:
+                        return 'boomerang'
+            return 'triangle'
+                   
     @staticmethod
     def add_to_dir(direction1, direction2):
         new_direction = direction1 + direction2

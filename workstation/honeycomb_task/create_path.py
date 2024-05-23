@@ -4,9 +4,13 @@ and end position.
 It requires methods to create paths given certain constraints, such as
 the shortest path, a path that avoids other robots or obstacles, etc.
 '''
+import sys
+sys.path.append('/home/jake/Documents/robot_maze/workstation')
+
 import numpy as np
 import copy
-from .platform_map import Map
+from honeycomb_task.platform_map import Map
+import time
 
 # CreatePath should take a start and end position, and optionally a 
 # list of positions to avoid
@@ -22,12 +26,34 @@ class Paths:
             else:
                 self.next_plats = next_positions
                 
+            # get starting shape (i.e. straightline, boomerang, or triangle)
+            self.start_shape = map.get_shape(robots)
+
+            positions = [robots.get_stat_robot().position, self.next_plats[0], self.next_plats[1]]
+
+            self.end_shape = map.get_shape_from_positions(positions)
+
+            self.select_targets(robots, map)
+            
+            
             # get all possible paths
-            self.all_paths = get_all_paths(robots, self.next_plats, map)
+            start_time = time.time()
+            # self.all_paths = get_all_paths(robots, self.next_plats, map)
+            self.all_paths = get_all_paths_new(self, robots, map)
+            stop_time = time.time()
+            print(f'get_all_paths took {stop_time - start_time} seconds')
+
+            # for key, value in self.targets.items():
+            #     self.all_paths[key] = self.all_paths[key][f'to_plat{value}']
 
             # select the optimal paths
-            self.optimal_paths = select_optimal_paths(self.all_paths, robots, self.next_plats, map)
+            start_time = time.time()
+            self.optimal_paths = select_optimal_paths_new(self, robots, map)
+            stop_time = time.time()
+            print(f'select_optimal_paths took {stop_time - start_time} seconds')
+            pass
 
+            
         elif task == 'task_2goal':
             # if stationary robot is at the mirror_goal position, then use get_all_paths
             stat_robot = robots.get_stat_robot()
@@ -131,6 +157,143 @@ class Paths:
             close_paths_plot(self.fig_handle)
             self.fig_handle = None
         return
+    
+
+    def select_targets(self, robots, map):
+
+        stat_robot = robots.get_stat_robot()
+        moving_robots = robots.get_moving_robots()
+        moving_robot_ids = list(moving_robots.members.keys())
+        moving_robot_positions = moving_robots.get_positions()
+        directions = 'clockwise', 'anticlockwise'
+        targets = {moving_robot_ids[0]: None, moving_robot_ids[1]: None}
+
+        if self.start_shape == 'line' or self.start_shape == 'boomerang':
+            # find the moving robot at the end of the line
+            for r in range(2):
+                if map.check_adjacent(moving_robot_positions[r], stat_robot.position):
+                    middle_robot = moving_robot_ids[r]
+                    break
+            end_robot = moving_robot_ids[0] if middle_robot == moving_robot_ids[1] else moving_robot_ids[1]
+
+            end_dist1 = map.find_shortest_distance(robots.members[end_robot].position, self.next_plats[0])
+            end_dist2 = map.find_shortest_distance(robots.members[end_robot].position, self.next_plats[1])
+
+            middle_dist1 = map.find_shortest_distance(robots.members[middle_robot].position, self.next_plats[0])
+            middle_dist2 = map.find_shortest_distance(robots.members[middle_robot].position, self.next_plats[1])
+
+
+        ############################ LINE ############################# 
+        if self.start_shape == 'line':          
+
+            if end_dist1 < end_dist2:
+                end_robot_target = self.next_plats[0]
+                middle_robot_target = self.next_plats[1]
+            else:
+                end_robot_target = self.next_plats[1]
+                middle_robot_target = self.next_plats[0]
+
+            self.targets = {end_robot: end_robot_target, middle_robot: middle_robot_target}
+            return
+
+        ############################ BOOMERANG #############################
+        if self.start_shape == 'boomerang':
+
+            if self.end_shape == 'line':
+                if end_dist1 == end_dist2:
+                    if middle_dist1 < middle_dist2:
+                        end_robot_target = self.next_plats[1]
+                        middle_robot_target = self.next_plats[0]
+                    else:
+                        end_robot_target = self.next_plats[0]
+                        middle_robot_target = self.next_plats[1]
+
+                elif middle_dist1 == 0 or middle_dist2 == 0:
+                    if middle_dist1 == 0:
+                        end_robot_target = self.next_plats[1]
+                        middle_robot_target = self.next_plats[0]
+                    else:
+                        end_robot_target = self.next_plats[0]
+                        middle_robot_target = self.next_plats[1]
+
+                else:
+                    if end_dist1 < end_dist2:
+                        end_robot_target = self.next_plats[0]
+                        middle_robot_target = self.next_plats[1]
+                    else:
+                        end_robot_target = self.next_plats[1]
+                        middle_robot_target = self.next_plats[0]
+            
+
+            elif self.end_shape == 'boomerang':
+
+                if middle_dist1 == 0 or middle_dist2 == 0:                
+                    if middle_dist1 == 0:                
+                        if middle_dist2 == end_dist2:
+                            end_robot_target = self.next_plats[1]
+                            middle_robot_target = self.next_plats[0]
+
+                        else:
+                            end_robot_target = self.next_plats[0]
+                            middle_robot_target = self.next_plats[1]
+                        
+                    else:
+                        if middle_dist1 == end_dist1:
+                            end_robot_target = self.next_plats[0]
+                            middle_robot_target = self.next_plats[1]
+                        else:
+                            end_robot_target = self.next_plats[1]
+                            middle_robot_target = self.next_plats[0]
+
+                # else if both the middle and end robots lie on an axis with one of the new positions, 
+                # then middle robot moves to this position
+                elif map.get_common_axis_from_positions([robots.members[middle_robot].position, \
+                        robots.members[end_robot].position, self.next_plats[0]])[0] is not None:
+                    end_robot_target = self.next_plats[1]
+                    middle_robot_target = self.next_plats[0]                                                
+                         
+                elif map.get_common_axis_from_positions([robots.members[middle_robot].position, \
+                        robots.members[end_robot].position, self.next_plats[1]])[0] is not None:
+                    end_robot_target = self.next_plats[0]
+                    middle_robot_target = self.next_plats[1]
+
+                else:
+                    if end_dist1 < end_dist2:
+                        end_robot_target = self.next_plats[0]
+                        middle_robot_target = self.next_plats[1]
+                    else:
+                        end_robot_target = self.next_plats[1]
+                        middle_robot_target = self.next_plats[0]                  
+
+                self.targets = {end_robot: end_robot_target, middle_robot: middle_robot_target}
+            return
+
+    
+
+        ############################ TRIANGLE #############################
+        if self.start_shape == 'triangle':
+            # find the moving robot that is not adjacent to the stationary robot
+            for r in range(2):
+                if not map.check_adjacent(moving_robot_positions[r], stat_robot.position):
+                    end_robot = moving_robot_ids[r]
+                    break
+
+            # calculate distance from end robot to other robots
+            dist1 = map.find_shortest_distance(robots.members[end_robot].position, self.next_plats[0])
+            dist2 = map.find_shortest_distance(robots.members[end_robot].position, self.next_plats[1])
+
+            if dist1 < dist2:
+                end_robot_target = self.next_plats[0]
+                middle_robot_target = self.next_plats[1]
+            else:
+                end_robot_target = self.next_plats[1]
+                middle_robot_target = self.next_plats[0]
+
+            self.targets = {end_robot: end_robot_target, middle_robot: middle_robot_target}
+
+        return
+        
+        
         
 
 def get_starting_positions(robots, map):
@@ -534,6 +697,266 @@ def get_all_paths(robots, next_plats, map):
 
     return paths
 
+
+def get_all_paths_new(paths, robots, map):
+    ''' determines the paths the moving robot can take to reach
+    the required position adjacent to the stationary robot'''
+
+    # first, verify that next platforms are adjacent to the stationary robot
+    stat_robot = robots.get_stat_robot()
+    # get stationary robot's first order ring
+    stat_robot_ring = map.get_ring_around_position(stat_robot.position, 1)
+    # verify that next_plats are in stat_robot_ring
+    next_plats = paths.next_plats
+    for p in next_plats:
+        if p not in stat_robot_ring:
+            raise ValueError(f'Next platform {p} is not adjacent to the stationary robot.')
+   
+    # determine if all robots are on the same axis, and if so,
+    # if the stationary robot lies at the end of the line of robots, as this 
+    # is a special case where the opposited robot will need to move to the 
+    # stationary robot's 3rd order ring
+    moving_robots = robots.get_moving_robots()
+    # get the starting positions of the next paths
+    initial_positions = get_starting_positions(robots, map)
+
+    # the robots will travel around the stationary robots 2nd order ring
+    main_ring = map.get_ring_around_position(stat_robot.position, 2)
+
+    # get the the first order rings around each of the next_plats
+    targets = {}
+    for p in next_plats:
+        next_plats_rings = map.get_ring_around_position(p, 1)
+        # the targets are the positions included in both main_ring
+        # and next_plats_rings
+        targets[p] = np.intersect1d(main_ring, next_plats_rings)
+
+    # each initial position represents two possible paths,
+    # one clockwise and one anticlockwise, to each new position
+    
+    
+    
+    
+    directions = ['clockwise', 'anticlockwise']
+    paths_all = {}
+    for key, r in moving_robots.members.items():      
+        paths_all[key] = {}
+
+        p2 = paths.targets[key]
+
+
+        for p in initial_positions[key]:  
+            paths_all[key][f'from_plat{p}'] = {}        
+            for d in directions:
+                paths_all[key][f'from_plat{p}'][d] = {}
+
+                proto_path = copy.deepcopy(main_ring)
+                # concatenate proto_path with itself to make it easier to
+                # find the shortest path
+                proto_path = proto_path + proto_path
+
+                if d == 'anticlockwise':
+                    proto_path = proto_path[::-1]
+
+                # find target positions in proto_path
+                target_ind = np.where(np.isin(proto_path, targets[p2]))[0]
+
+
+                # if p is not in protopath, then find where its first
+                # order ring intesects it
+                common_vals = None
+                if p not in proto_path:
+                    # find common values between main_ring
+                    # and p's first order ring
+                    common_vals = np.intersect1d(main_ring,
+                            map.get_ring_around_position(p, 1))
+                    
+                    # find where common_vals intersect proto_path
+                    start_ind = np.where(np.isin(proto_path, common_vals))[0]
+
+                    # remove target_ind values that are less than minimum start_ind value.
+                    target_ind = target_ind[target_ind >= np.min(start_ind)]
+
+                    # remove start_ind values that are greater than maximum target_ind value.
+                    start_ind = start_ind[start_ind <= np.max(target_ind)]
+
+                    min_length = None
+                    final_start_ind = None
+                    final_target_ind = None
+                    for t in target_ind:
+                        for s in start_ind:
+                            path_length = t - s
+                            if path_length >= 0 and (min_length is None or path_length < min_length):
+                                min_length = path_length
+                                final_start_ind = s
+                                final_target_ind = t
+
+                    path = [p] + proto_path[final_start_ind:final_target_ind+1]             
+            
+                else:
+                    if p in targets[p2]:
+                        path = [p]
+                    else:
+                        start_ind = np.where(proto_path == p)[0][0]
+                        # find the start_ind value and the target_ind value that when 
+                        # start_ind is subtracted from target_ind produces the smallest
+                        # positive value
+                        diff = target_ind - start_ind
+                        # find the smallest positive value in diff
+                        diff = diff[diff > 0]
+                        diff = np.min(diff)
+                        last_ind = start_ind + diff
+
+                        path = proto_path[start_ind:last_ind+1]
+                
+                paths_all[key][f'from_plat{p}'][d] = path
+
+    return paths_all
+
+
+
+def select_optimal_paths_new(paths, robots, map):
+    ''' selects the optimal paths from the set of all paths. The rules are 
+    1) the paths can't intersect (if robots moving in opposite directions), 
+    2) can't start or finish on the same platform or occupy the same position
+    at the same time step, 
+    
+    Oct 5, 2023: inserting 3) robots that are initially adjacent can't move to
+    another position where they are still adjacent (as the chances of them 
+    hitting each other are too high) 
+    Oct 4, 2023: need to be more stringent, can't have robots becoming adjacent either, 
+    except at the end
+
+    4) robots shouldn't follow each other, even with a gap of 1 (that being said, 
+    such paths probably won't meet all the other criteria anyways, and I think were
+    only occurring because of bugs - Jake 2023-10-12)
+
+    5) and should have the shortest possible length, 
+    measured as the length of the longer of the two paths. 
+    
+    '''
+    stat_robot = robots.get_stat_robot()
+    moving_robots = robots.get_moving_robots()
+    moving_robot_ids = list(moving_robots.members.keys())
+    directions = 'clockwise', 'anticlockwise'
+
+    # loop through every combination of robot1_to_plat1 and robot2_to_plat2 paths, 
+    # and every combination of robot1_to_plat2 and robto2_to_plat1 paths and
+    # find the shortest path that satisfies the rules.
+    optimal_paths = {}
+
+    shortest_path_length = None
+    longest_path_length = None
+    path_directions = [None, None]
+    
+
+    p = paths.targets[moving_robot_ids[0]]
+
+    p2 = paths.targets[moving_robot_ids[1]]
+
+    # get all paths from paths[moving_robot_ids[0]][f'to_plat{p}'] 
+    start1 = robots.members[moving_robot_ids[0]].position
+    paths1 = paths.all_paths[moving_robot_ids[0]]
+
+    start2 = robots.members[moving_robot_ids[1]].position
+    paths2 = paths.all_paths[moving_robot_ids[1]]
+    
+
+    for path1_both_dir in paths1.values():
+        for d in directions:
+            path1 = path1_both_dir[d]
+
+            for path2_both_dir in paths2.values():
+                
+                if d == 'clockwise':
+                    d2 = 'anticlockwise'
+                else:
+                    d2 = 'clockwise'
+
+                path2 = path2_both_dir[d2]
+
+                # check path compatibility 
+                # 1) paths can't intersect if robots moving in opposite directions
+                if d != d2 and len(np.intersect1d(path1, path2)) > 0:
+                    continue
+
+                # 2) can't start or finish on the same platform or occupy the same position
+                # at the same time step
+                if path1[0] == path2[0] or path1[-1] == path2[-1]:
+                        continue
+                
+                min_path_length = np.min([len(path1), len(path2)])
+                max_path_length = np.max([len(path1), len(path2)])
+                identical_step = False
+                for s in range(min_path_length):
+                    if path1[s] == path2[s]:
+                        identical_step = True                                
+                        break
+                if identical_step:
+                    continue
+
+                # 3) robots that are initially adjacent can't move to adjacent positions
+                # if start1 and start2 are adjacent, check if first path positions are adjacent
+                
+                if map.check_robots_adjacent(robots) and \
+                    map.check_adjacent(path1[0], path2[0]):
+                    continue
+
+                adj_counter = 0
+                break_flag = False
+                for s in range(max_path_length):
+                    if s >= min_path_length:
+                        if len(path1) == min_path_length:
+                            path1_plat = path1[-1]
+                            path2_plat = path2[s]
+                        else:
+                            path1_plat = path1[s]
+                            path2_plat = path2[-1]
+                    else:
+                        path1_plat = path1[s]
+                        path2_plat = path2[s]
+                                                
+                    
+                    if path1_plat == path2_plat:
+                        break_flag = True
+                        break
+                    elif map.check_adjacent(path1_plat, path2_plat):
+                        adj_counter += 1                            
+
+                if break_flag or adj_counter > 1:
+                    continue
+
+                # 4) if one robot is following the other, even with a gap of 1 platform,
+                # there is the potential for the following robot to hit the leading robot 
+                path1_length = len(path1)
+                path2_length = len(path2)
+                if path1_length > 2 and path2_length > 2:
+                    distance = []
+                    for pos in range(2):
+                        distance.append(map.find_shortest_distance(path1[pos], path2[pos]))
+                    if distance[0] <= 2 and distance[1] <= 2:
+                        continue 
+
+                # 5) should have the shortest possible length                      
+                if (shortest_path_length == None and longest_path_length == None) or \
+                    (max_path_length < longest_path_length) or \
+                        (max_path_length == max_path_length and \
+                            min_path_length < shortest_path_length) or \
+                                (d != d2 and path_directions[0] == path_directions[1]):
+                    
+                    shortest_path_length = min_path_length
+                    longest_path_length = max_path_length
+
+                    path_directions[0] = d
+                    path_directions[1] = d2
+
+                    optimal_paths[moving_robot_ids[0]] = path1 + [p]
+                    optimal_paths[moving_robot_ids[1]] = path2 + [p2]
+    
+    return optimal_paths
+
+
+
 def select_optimal_paths(paths, robots, next_plats, map):
     ''' selects the optimal paths from the set of all paths. The rules are 
     1) the paths can't intersect (if robots moving in opposite directions), 
@@ -667,6 +1090,7 @@ def select_optimal_paths(paths, robots, next_plats, map):
                             optimal_paths[moving_robot_ids[1]] = path2 + [p2]
         
     return optimal_paths
+
 
 
 def construct_paths(robots, next_plats, map):
@@ -862,8 +1286,9 @@ if __name__ == '__main__':
     # __package__ = "honeycomb_task"
     # directory = '/media/jake/LaCie/robot_maze_workspace'
     # directory = 'D:/testFolder/pico_robots/map'
-    directory = 'C:/Users/Jake/Documents/robot_maze'
+    # directory = 'C:/Users/Jake/Documents/robot_maze'
     # directory = 'C:/Users/Jake/Desktop/map_of_platforms'
+    directory = '/home/jake/Documents/robot_maze/workstation/map_files'
     # map = platform_map.open_map(map='restricted_map', directory=directory)
     
     map = Map(directory=directory)
@@ -871,9 +1296,9 @@ if __name__ == '__main__':
 
     from robot import Robot, Robots 
 
-    robot1 = Robot(1, '192.168.0.102', 65535, 155, 0, 'stationary', map)
-    robot2 = Robot(2, '192.168.0.103', 65534, 136, 180, 'moving', map)
-    robot3 = Robot(3, '192.168.0.104', 65533, 127, 300, 'moving', map)
+    robot1 = Robot(1, '192.168.0.102', 65535, 99, 0, 'stationary')
+    robot2 = Robot(2, '192.168.0.103', 65534, 90, 180, 'moving')
+    robot3 = Robot(3, '192.168.0.104', 65533, 100, 300, 'moving')
 
    
     robots = Robots()
@@ -882,14 +1307,14 @@ if __name__ == '__main__':
     # robots = Robots.from_yaml(yaml_dir)
 
 
-    # next_plats = [43, 61]    
+    next_plats = [118, 89]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)
     # print(optimal_paths)
 
 
-    next_plats = get_next_positions(robots, map, None, 'hard')
+    # next_plats = get_next_positions(robots, map, None, 'hard')
     # print(next_plats)
 
     # paths = Paths(robots, map, next_positions=[52, 42])

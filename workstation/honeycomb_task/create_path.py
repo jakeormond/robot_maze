@@ -268,31 +268,26 @@ class Paths:
                 self.targets = {end_robot: end_robot_target, middle_robot: middle_robot_target}
             return
 
-    
-
         ############################ TRIANGLE #############################
         if self.start_shape == 'triangle':
-            # find the moving robot that is not adjacent to the stationary robot
-            for r in range(2):
-                if not map.check_adjacent(moving_robot_positions[r], stat_robot.position):
-                    end_robot = moving_robot_ids[r]
-                    break
 
-            # calculate distance from end robot to other robots
-            dist1 = map.find_shortest_distance(robots.members[end_robot].position, self.next_plats[0])
-            dist2 = map.find_shortest_distance(robots.members[end_robot].position, self.next_plats[1])
+            moving_robot1 = moving_robot_ids[0] 
+            moving_robot2 = moving_robot_ids[1]
 
-            if dist1 < dist2:
-                end_robot_target = self.next_plats[0]
-                middle_robot_target = self.next_plats[1]
-            else:
-                end_robot_target = self.next_plats[1]
-                middle_robot_target = self.next_plats[0]
+            dist1_1 = map.find_shortest_distance(robots.members[moving_robot1].position, self.next_plats[0])
+            dist1_2 = map.find_shortest_distance(robots.members[moving_robot1].position, self.next_plats[1])
 
-            self.targets = {end_robot: end_robot_target, middle_robot: middle_robot_target}
+            dist2_1 = map.find_shortest_distance(robots.members[moving_robot2].position, self.next_plats[0])
+            dist2_2 = map.find_shortest_distance(robots.members[moving_robot2].position, self.next_plats[1])
 
-        return
-        
+            if self.end_shape == 'line':
+                # if neither robot is at a new location, they each go to their closest new location
+                if dist1_1 == 0 or dist2_2 == 0 or dist1_1 < dist1_2:
+                    self.targets = {moving_robot1: self.next_plats[0], moving_robot2: self.next_plats[1]}
+                elif dist1_2 == 0 or dist2_1 == 0 or dist1_2 < dist1_1:
+                    self.targets = {moving_robot1: self.next_plats[1], moving_robot2: self.next_plats[0]}
+
+            elif self.end_shape == 'boomerang':
         
         
 

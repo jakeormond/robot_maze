@@ -18,6 +18,7 @@ import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 import copy
+import time
 plt.ion
 
 # CONSTANTS
@@ -83,7 +84,7 @@ choice_counter = 1
 start_platform = robots.members['robot1'].position
 # possible_platforms = robots.get_positions()
 robot_path_plot = Plot()
-
+start_choice_time = time.time()
 while True:
     # if animal is at goal, we just need to move the other 2 robots away
     if choice_counter != 1 and chosen_platform == map.goal_position:
@@ -143,13 +144,15 @@ while True:
 
     # plot the paths
     # paths.plot_paths(robots, map)
-    robot_path_plot.plot_paths(robots, map, paths.optimal_paths)
+    # robot_path_plot.plot_paths(robots, map, paths.optimal_paths)
     robots.update_positions(paths)  # the positions need to be update before the move so we can update the crop parameters
     # get new crop parameters
     if choice_counter == 1 or chosen_platform != map.goal_position: # don't get new crop if at goal because it's unnecessary
         crop_nums = map.get_crop_nums(robots.get_positions()) # and platform positions may be outside map
         write_bonsai_crop_params(crop_nums, top_dir) 
     
+    end_choice_time = time.time()
+    print(f'Time to make choice: {end_choice_time - start_choice_time}')
     # send the remaining commands to robots.
     send_over_sockets_threads(robots, paths)      
 

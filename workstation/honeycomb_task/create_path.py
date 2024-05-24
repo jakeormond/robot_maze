@@ -5,7 +5,9 @@ It requires methods to create paths given certain constraints, such as
 the shortest path, a path that avoids other robots or obstacles, etc.
 '''
 import sys
-sys.path.append('/home/jake/Documents/robot_maze/workstation')
+# sys.path.append('/home/jake/Documents/robot_maze/workstation')
+sys.path.append('C:/Users/LabUser/Documents/robot_maze/workstation')
+
 
 import numpy as np
 import copy
@@ -16,7 +18,7 @@ import time
 # list of positions to avoid
 class Paths:
     def __init__(self, robots, map, next_positions=None, task='task', \
-                 difficulty = 'hard', choices = None):
+                 difficulty = 'hard', start = False, choices = None):
         
         if task == 'task':       
             if next_positions is None:
@@ -168,6 +170,107 @@ class Paths:
         directions = 'clockwise', 'anticlockwise'
         targets = {moving_robot_ids[0]: None, moving_robot_ids[1]: None}
 
+        if self.start_shape == 'trial_start':
+            moving_robot1 = moving_robot_ids[0] 
+            moving_robot2 = moving_robot_ids[1]
+
+            dist1_1 = map.find_shortest_distance(robots.members[moving_robot1].position, self.next_plats[0])
+            dist1_2 = map.find_shortest_distance(robots.members[moving_robot1].position, self.next_plats[1])
+
+            dist2_1 = map.find_shortest_distance(robots.members[moving_robot2].position, self.next_plats[0])
+            dist2_2 = map.find_shortest_distance(robots.members[moving_robot2].position, self.next_plats[1])
+
+            if self.end_shape == 'line':
+                if dist1_1 == dist2_1:
+                    targets[moving_robot1] = self.next_plats[0]
+                    targets[moving_robot2] = self.next_plats[1]
+                
+                elif dist1_1 == 1 or dist2_2 == 1:
+                    targets[moving_robot1] = self.next_plats[0]
+                    targets[moving_robot2] = self.next_plats[1]
+
+                else:
+                    targets[moving_robot1] = self.next_plats[1]
+                    targets[moving_robot2] = self.next_plats[0]
+                
+            elif self.end_shape == 'boomerang':
+                if dist1_1 == dist2_2 and dist1_2 == dist2_1:
+                    if dist1_1 < dist1_2:
+                        targets[moving_robot1] = self.next_plats[0]
+                        targets[moving_robot2] = self.next_plats[1]
+                    
+                    else:
+                        targets[moving_robot1] = self.next_plats[1]
+                        targets[moving_robot2] = self.next_plats[0]
+                    
+                else:
+                    if max(dist1_1, dist2_2) == 3 and max(dist1_2, dist2_1) == 3:
+                        if dist1_1 == 1 or dist2_2 == 1:
+                            targets[moving_robot1] = self.next_plats[0]
+                            targets[moving_robot2] = self.next_plats[1]
+                        else:
+                            targets[moving_robot1] = self.next_plats[1]
+                            targets[moving_robot2] = self.next_plats[0]
+
+                    elif dist1_1 == 3 or dist2_2 == 3:
+                        targets[moving_robot1] = self.next_plats[1]
+                        targets[moving_robot2] = self.next_plats[0]
+                    else:
+                        targets[moving_robot1] = self.next_plats[0]
+                        targets[moving_robot2] = self.next_plats[1]
+
+            else: # end_shape is triangle
+                if dist1_1 == 1 and dist1_2 == 1:
+                    if dist2_1 == 2:
+                        targets[moving_robot1] = self.next_plats[0]
+                        targets[moving_robot2] = self.next_plats[1]
+                    else:
+                        targets[moving_robot1] = self.next_plats[1]
+                        targets[moving_robot2] = self.next_plats[0]
+
+                elif dist2_1 == 1 and dist2_2 == 1:
+                    if dist1_1 == 2:
+                        targets[moving_robot1] = self.next_plats[1]
+                        targets[moving_robot2] = self.next_plats[0]
+                    else:
+                        targets[moving_robot1] = self.next_plats[0]
+                        targets[moving_robot2] = self.next_plats[1]
+
+                elif dist1_1 == 1 or dist2_2 == 1:
+                    targets[moving_robot1] = self.next_plats[0]
+                    targets[moving_robot2] = self.next_plats[1]
+                
+                elif dist1_2 == 1 or dist2_1 == 1:
+                    targets[moving_robot1] = self.next_plats[1]
+                    targets[moving_robot2] = self.next_plats[0]
+
+                elif dist1_1 == 2 or dist2_2 == 2:
+                    targets[moving_robot1] = self.next_plats[0]
+                    targets[moving_robot2] = self.next_plats[1]
+                
+                elif dist1_2 == 2 or dist2_1 == 2:
+                    targets[moving_robot1] = self.next_plats[1]
+                    targets[moving_robot2] = self.next_plats[0]
+
+                elif dist1_1 == 3 and dist1_2 == 3:
+                    if dist2_1 == 2:
+                        targets[moving_robot1] = self.next_plats[1]
+                        targets[moving_robot2] = self.next_plats[0]
+                    else:
+                        targets[moving_robot1] = self.next_plats[0]
+                        targets[moving_robot2] = self.next_plats[1]
+
+                elif dist2_1 == 3 and dist2_2 == 3:
+                    if dist1_1 == 2:
+                        targets[moving_robot1] = self.next_plats[0]
+                        targets[moving_robot2] = self.next_plats[1]
+                    else:
+                        targets[moving_robot1] = self.next_plats[1]
+                        targets[moving_robot2] = self.next_plats[0]
+
+            self.targets = targets
+            return  
+        
         if self.start_shape == 'line' or self.start_shape == 'boomerang':
             # find the moving robot at the end of the line
             for r in range(2):
@@ -263,8 +366,60 @@ class Paths:
                         middle_robot_target = self.next_plats[1]
                     else:
                         end_robot_target = self.next_plats[1]
-                        middle_robot_target = self.next_plats[0]                  
+                        middle_robot_target = self.next_plats[0]   
 
+            else: # end shape is triangle
+                if middle_dist1 == 0 or middle_dist2 == 0:
+                    if middle_dist1 == 0:
+                        if end_dist2 == 1:
+                            end_robot_target = self.next_plats[1]
+                            middle_robot_target = self.next_plats[0]
+
+                        else: # end_dist2 == 2
+                            end_robot_target = self.next_plats[0]
+                            middle_robot_target = self.next_plats[1]
+                    
+                    else: # middle_dist2 == 0
+                        if end_dist1 == 1:
+                            end_robot_target = self.next_plats[0]
+                            middle_robot_target = self.next_plats[1]
+                        
+                        else: # end_dist1 == 2
+                            end_robot_target = self.next_plats[1]
+                            middle_robot_target = self.next_plats[0]
+
+                elif middle_dist1 == 1 and end_dist1 == 2:
+                    end_robot_target = self.next_plats[1]
+                    middle_robot_target = self.next_plats[0]
+
+                elif middle_dist2 == 1 and end_dist2 == 2:
+                    end_robot_target = self.next_plats[0]
+                    middle_robot_target = self.next_plats[1]
+
+                elif middle_dist1 == 1 and end_dist1 == 1:
+                    end_robot_target = self.next_plats[0]
+                    middle_robot_target = self.next_plats[1]
+
+                elif middle_dist2 == 1 and end_dist2 == 1:
+                    end_robot_target = self.next_plats[1]
+                    middle_robot_target = self.next_plats[0]
+
+                elif end_dist1== 3 and end_dist2 == 3:
+                    if middle_dist1 == 2:
+                        end_robot_target = self.next_plats[1]
+                        middle_robot_target = self.next_plats[0]
+                    else:
+                        end_robot_target = self.next_plats[0]
+                        middle_robot_target = self.next_plats[1]
+
+                elif end_dist1 == 2:
+                    end_robot_target = self.next_plats[0]
+                    middle_robot_target = self.next_plats[1]
+                
+                else:
+                    end_robot_target = self.next_plats[1]
+                    middle_robot_target = self.next_plats[0]
+                    
             self.targets = {end_robot: end_robot_target, middle_robot: middle_robot_target}
             return
 
@@ -1312,7 +1467,9 @@ if __name__ == '__main__':
     # directory = 'D:/testFolder/pico_robots/map'
     # directory = 'C:/Users/Jake/Documents/robot_maze'
     # directory = 'C:/Users/Jake/Desktop/map_of_platforms'
-    directory = '/home/jake/Documents/robot_maze/workstation/map_files'
+    # directory = '/home/jake/Documents/robot_maze/workstation/map_files'
+    directory = 'C:/Users/LabUser/Documents/robot_maze/workstation/map_files'
+    
     # map = platform_map.open_map(map='restricted_map', directory=directory)
     
     map = Map(directory=directory)
@@ -1320,9 +1477,9 @@ if __name__ == '__main__':
 
     from robot import Robot, Robots 
 
-    robot1 = Robot(1, '192.168.0.102', 65535, 99, 0, 'stationary')
-    robot2 = Robot(2, '192.168.0.103', 65534, 80, 180, 'moving')
-    robot3 = Robot(3, '192.168.0.104', 65533, 90, 300, 'moving')
+    robot1 = Robot(1, '192.168.0.102', 65535, 119, 0, 'stationary')
+    robot2 = Robot(2, '192.168.0.103', 65534, 91, 180, 'moving')
+    robot3 = Robot(3, '192.168.0.104', 65533, 100, 300, 'moving')
 
    
     robots = Robots()
@@ -1331,7 +1488,7 @@ if __name__ == '__main__':
     # robots = Robots.from_yaml(yaml_dir)
 
 
-    next_plats = [109, 118]    
+    next_plats = [100, 109]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)

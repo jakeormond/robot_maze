@@ -321,11 +321,26 @@ class Map:
         # check if they are in a triangle shape, i.e. all distances between them are 1
         else:
             positions = robots.get_positions()
+
+            # if all distances between the 3 positions are 2, then they are in "trial_start" shape
+            shortest_shortest_distance = 99
+            longest_shortest_distance = 0
             for i in range(2):
                 for j in range(i+1, 3):
-                    if self.find_shortest_distance(positions[i], positions[j]) != 1:
-                        return 'boomerang'
-            return 'triangle'
+                    longest_shortest_distance = max(longest_shortest_distance, \
+                            self.find_shortest_distance(positions[i], positions[j]))
+                    shortest_shortest_distance = min(shortest_shortest_distance, \
+                            self.find_shortest_distance(positions[i], positions[j]))
+                    
+            if shortest_shortest_distance == 2:
+                return 'trial_start'
+            
+            elif longest_shortest_distance == 1:
+                return 'triangle'
+            
+            else:
+                return 'boomerang'
+
         
     def get_shape_from_positions(self, positions):
         # check if they are on line

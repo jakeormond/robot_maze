@@ -160,7 +160,7 @@ def send_over_sockets_serial(robots, paths, ordered_keys, num_commands=3):
     return 
 
 def send_over_sockets_threads(robots, paths, print_output=False):
-     # get commands
+    # get commands
     commands = paths.command_strings
     # get robot keys
     robot_keys = list(commands.keys())                  

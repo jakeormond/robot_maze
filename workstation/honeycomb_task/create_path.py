@@ -100,7 +100,7 @@ class Paths:
 
                     angle_diffs[key].append(angle_diff)
             
-            # determing if the 2 robots have overlapping sets of next platforms
+            # determining if the 2 robots have overlapping sets of next platforms
             keys = list(angle_diffs.keys())
             i = 0
             while i < len(next_positions[keys[0]]):
@@ -265,7 +265,7 @@ class Paths:
                         end_robot_target = self.next_plats[1]
                         middle_robot_target = self.next_plats[0]                  
 
-                self.targets = {end_robot: end_robot_target, middle_robot: middle_robot_target}
+            self.targets = {end_robot: end_robot_target, middle_robot: middle_robot_target}
             return
 
         ############################ TRIANGLE #############################
@@ -288,7 +288,36 @@ class Paths:
                     self.targets = {moving_robot1: self.next_plats[1], moving_robot2: self.next_plats[0]}
 
             elif self.end_shape == 'boomerang':
+                if dist1_1 == 0 or dist2_2 == 0:
+                    self.targets = {moving_robot1: self.next_plats[0], moving_robot2: self.next_plats[1]}
+                elif dist1_2 == 0 or dist2_1 == 0:
+                    self.targets = {moving_robot1: self.next_plats[1], moving_robot2: self.next_plats[0]}
+
+                elif dist1_1 == 1 or dist2_2 == 1:
+                    self.targets = {moving_robot1: self.next_plats[0], moving_robot2: self.next_plats[1]}
+                else:
+                    self.targets = {moving_robot1: self.next_plats[1], moving_robot2: self.next_plats[0]}
+                
         
+            elif self.end_shape == 'triangle':
+                if dist1_1 == 0 or dist2_2 == 0:
+                    self.targets = {moving_robot1: self.next_plats[0], moving_robot2: self.next_plats[1]}
+                elif dist1_2 == 0 or dist2_1 == 0:
+                    self.targets = {moving_robot1: self.next_plats[1], moving_robot2: self.next_plats[0]}
+                elif dist1_1 == 1 or  dist2_2 == 1:
+                        self.targets = {moving_robot1: self.next_plats[0], moving_robot2: self.next_plats[1]}
+                elif dist1_2 == 1 or dist2_1 == 1:
+                        self.targets = {moving_robot1: self.next_plats[1], moving_robot2: self.next_plats[0]}
+                elif dist1_1 < dist1_2:
+                    self.targets = {moving_robot1: self.next_plats[0], moving_robot2: self.next_plats[1]}
+                # else robot goes to position it does NOT share a common axis with
+                else:
+                    if map.get_common_axis_from_positions([robots.members[moving_robot1].position, self.next_plats[0]])[0] is not None:
+                        self.targets = {moving_robot1: self.next_plats[1], moving_robot2: self.next_plats[0]}
+                    else:
+                        self.targets = {moving_robot1: self.next_plats[0], moving_robot2: self.next_plats[1]}                        
+            
+            return
         
 
 def get_starting_positions(robots, map):
@@ -1292,8 +1321,8 @@ if __name__ == '__main__':
     from robot import Robot, Robots 
 
     robot1 = Robot(1, '192.168.0.102', 65535, 99, 0, 'stationary')
-    robot2 = Robot(2, '192.168.0.103', 65534, 90, 180, 'moving')
-    robot3 = Robot(3, '192.168.0.104', 65533, 100, 300, 'moving')
+    robot2 = Robot(2, '192.168.0.103', 65534, 80, 180, 'moving')
+    robot3 = Robot(3, '192.168.0.104', 65533, 90, 300, 'moving')
 
    
     robots = Robots()
@@ -1302,7 +1331,7 @@ if __name__ == '__main__':
     # robots = Robots.from_yaml(yaml_dir)
 
 
-    next_plats = [118, 89]    
+    next_plats = [109, 118]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)

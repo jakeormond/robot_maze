@@ -280,10 +280,14 @@ class Paths:
             end_robot = moving_robot_ids[0] if middle_robot == moving_robot_ids[1] else moving_robot_ids[1]
 
             end_dist1 = map.find_shortest_distance(robots.members[end_robot].position, self.next_plats[0])
+            end_cart_dist1 = map.cartesian_distance(robots.members[end_robot].position, self.next_plats[0])
             end_dist2 = map.find_shortest_distance(robots.members[end_robot].position, self.next_plats[1])
+            end_cart_dist2 = map.cartesian_distance(robots.members[end_robot].position, self.next_plats[1])
 
             middle_dist1 = map.find_shortest_distance(robots.members[middle_robot].position, self.next_plats[0])
+            middle_cart_dist1 = map.cartesian_distance(robots.members[middle_robot].position, self.next_plats[0])
             middle_dist2 = map.find_shortest_distance(robots.members[middle_robot].position, self.next_plats[1])
+            middle_cart_dist2 = map.cartesian_distance(robots.members[middle_robot].position, self.next_plats[1])
 
 
         ############################ LINE ############################# 
@@ -405,7 +409,14 @@ class Paths:
                     middle_robot_target = self.next_plats[0]
 
                 elif end_dist1== 3 and end_dist2 == 3:
-                    if middle_dist1 == 2:
+                    if middle_dist1 == 2 or middle_dist2 == 2:
+                        if middle_cart_dist1 < middle_cart_dist2:
+                            end_robot_target = self.next_plats[1]
+                            middle_robot_target = self.next_plats[0]
+                        else:
+                            end_robot_target = self.next_plats[0]
+                            middle_robot_target = self.next_plats[1]
+                    elif middle_dist1 == 2:
                         end_robot_target = self.next_plats[1]
                         middle_robot_target = self.next_plats[0]
                     else:
@@ -1473,13 +1484,13 @@ if __name__ == '__main__':
     # map = platform_map.open_map(map='restricted_map', directory=directory)
     
     map = Map(directory=directory)
-    map.goal_position = 146
+    map.goal_position = 178
 
     from robot import Robot, Robots 
 
-    robot1 = Robot(1, '192.168.0.102', 65535, 119, 0, 'stationary')
-    robot2 = Robot(2, '192.168.0.103', 65534, 91, 180, 'moving')
-    robot3 = Robot(3, '192.168.0.104', 65533, 100, 300, 'moving')
+    robot1 = Robot(1, '192.168.0.102', 65535, 156, 0, 'moving')
+    robot2 = Robot(2, '192.168.0.103', 65534, 146, 180, 'moving')
+    robot3 = Robot(3, '192.168.0.104', 65533, 147, 300, 'stationary')
 
    
     robots = Robots()
@@ -1488,7 +1499,7 @@ if __name__ == '__main__':
     # robots = Robots.from_yaml(yaml_dir)
 
 
-    next_plats = [100, 109]    
+    next_plats = [138, 157]    
     # initial_positions = get_starting_positions(robots, map)
     # paths = get_all_paths(robots, next_plats, map)
     # optimal_paths = select_optimal_paths(paths, robots, next_plats, map)

@@ -23,7 +23,7 @@ plt.ion
 
 # CONSTANTS
 min_platform_dura_new = 0.2  # minimum duration animal must be on new platform to register choice
-min_platform_dura_verify = 0.5  # minimum duration animal must be on  platform to verify choice
+# min_platform_dura_verify = 0.5  # minimum duration animal must be on  platform to verify choice
                             # after robots have made their initial turns 
 
 # top level folder

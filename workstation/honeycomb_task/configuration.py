@@ -36,7 +36,7 @@ def create_yaml():
 def save_yaml(data, yaml_dir=None):
     if yaml_dir is None:
         # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
-        yaml_dir = 'D:/testFolder/pico_robots/yaml'
+        yaml_dir = 'D:/testFolder/platform_maps_and_yaml/yaml'
     os.chdir(yaml_dir)
 
     with open('config.yaml', 'w') as yaml_file:

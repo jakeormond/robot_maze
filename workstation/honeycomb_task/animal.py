@@ -241,7 +241,7 @@ def get_current_platform(parsed_data, possible_platforms,
                                (y_val - platform_coordinates[platform][1])**2)
 
     
-    if np.min(distances) > 80: # was 100
+    if np.min(distances) > 70: # was 100
         current_platform = None
     
     else:

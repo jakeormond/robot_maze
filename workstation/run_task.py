@@ -39,12 +39,12 @@ create_directory(data_dir)
 
 # create robot instances in a dictionary
 # yaml_dir = '/media/jake/LaCie/robot_maze_workspace'
-yaml_dir = 'D:/testFolder/pico_robots/yaml'
+yaml_dir = 'D:/testFolder/platform_maps_and_yaml/yaml'
 robots = Robots.from_yaml(yaml_dir, orientations=[0, 0, 0])
 
 # load map and set goal position
 # platform coordinates are also stored in the map object
-map_dir = 'D:/testFolder/pico_robots/map'
+map_dir = 'D:/testFolder/platform_maps_and_yaml/map'
 map = Map(directory=map_dir)
 map.set_goal_position(input('Enter goal position: '))
 

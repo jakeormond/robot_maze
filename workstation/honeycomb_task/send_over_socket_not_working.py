@@ -3,12 +3,24 @@ import threading
 import queue
 import time
 import errno
+import subprocess
 
 # Create a lock for protecting the data_queue
 data_queue_lock = threading.Lock()
 
 # Define constants
 BUFFER_SIZE = 1024
+
+# not working!!!!!!!!!!!!!!
+def connect_to_wifi_windows(ssid):
+    command = f"netsh wlan connect name={ssid}"
+    try:
+        subprocess.check_call(command, shell=True)
+        print(f"Connected to {ssid}")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to connect to {ssid}. Error: {e}")
+
+
 
 def send_over_socket(string_input, HOST, PORT):
     import socket
@@ -19,10 +31,26 @@ def send_over_socket(string_input, HOST, PORT):
     bytes_to_send = bytes(string_input, 'utf8')
     received_data = []
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((HOST, PORT))
-        # s.sendall(b"Hell, world")
-        s.sendall(bytes_to_send)
-       
+        s.settimeout(1)
+        try: 
+            s.connect((HOST, PORT))
+            s.settimeout(None)
+            # s.sendall(b"Hell, world")
+            s.sendall(bytes_to_send)
+
+        except (socket.error, ConnectionRefusedError) as e:
+
+            # print(f"reconnecting to wifi router")
+            # connect_to_wifi_windows("TP-Link_B182")
+
+            # now retry the connection
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(3)
+            s.connect((HOST, PORT))
+            s.settimeout(None)
+            s.sendall(bytes_to_send)
+        
+        
         counter = 0
         
         while True:
@@ -45,9 +73,9 @@ def send_over_socket(string_input, HOST, PORT):
 
             # append to received data
             received_data.extend(data)
-            break
 
             time.sleep(0.1) # not sure if this necessary or not
+            break
 
     # print received data
     print(received_data)
@@ -113,7 +141,6 @@ def handle_server(robot, string_input, data_queue):
             # check is any elements are empty and remove them
             data = [x for x in data if x != '']
             received_data.extend(data)
-            break
 
         except ConnectionResetError as e:
             print(f"Error: {e}")
@@ -197,48 +224,36 @@ def send_over_sockets_threads(robots, paths, print_output=False):
 
 if __name__ == '__main__':
 
-    # robot 2
+    # send_over_socket('99, 0, 2, 3, 2, 3 ', '192.168.0.104', 65533)
     send_over_socket('99, 0, 1', '192.168.0.103', 65534)
-    send_over_socket('99, 0, 1, 3, 1, 3, 1', '192.168.0.103', 65534)
-    
-    
-    send_over_socket('99, 0, 1, 3, 1, 3, 1', '192.168.0.102', 65535)
-    
-    
+    send_over_socket('99, 0, 1', '192.168.0.102', 65535)
     send_over_socket('99, 0, 1', '192.168.0.104', 65533)    
+    # send_over_socket('97', '192.168.0.102', 65535)
+    # send_over_socket('97', '192.168.0.103', 65534)
+    # send_over_socket('97', '192.168.0.104', 65533)
+    # send_over_socket('99, 3', '192.168.0.104', 65533)
 
-
+    map_dir = 'D:/testFolder/platform_maps_and_yaml/map'
 
     # add honeycomb_task to sys.path
     import sys
     sys.path.append('C:/Users/LabUser/Documents/robot_maze/workstation')
 
     from honeycomb_task.platform_map import Map
-    map_dir = 'D:/testFolder/platform_maps_and_yaml/map'
     map = Map(directory=map_dir)
     map.set_goal_position(154)   
-
+    
     from honeycomb_task.robot import Robot, Robots
-
-    robot1 = Robot(1, '192.168.0.102', 65535, 61, 0, 'stationary')
+    robot1 = Robot(1, '192.168.0.102', 65535, 61, 0, 'moving')
     robot2 = Robot(2, '192.168.0.103', 65534, 70, 0, 'moving')
-    robot3 = Robot(3, '192.168.0.104', 65533, 71, 0, 'moving')
-
+    robot3 = Robot(3, '192.168.0.104', 65533, 71, 0, 'stationary')
     robots = Robots()
     robots.add_robots([robot1, robot2, robot3])
 
     from honeycomb_task.create_path import Paths
     paths = Paths(robots, map)
 
-    paths.command_strings = {'robot2': ['99, 5, 1, 1, 1, 1', '99, 0, 1'], 'robot3': ['99, 1, 1, 5, 2, 5, 1, 5', '99, 0, 1']}
-    paths.command_strings = {'robot2': ['99, 0', '99, 0, 1'], 'robot3': ['99, 1, 1, 5, 2, 5, 2, 5, 1, 5', '99, 0, 1']}
-    send_over_sockets_threads(robots, paths)
+    send_over_sockets_threads(robots, paths)      
 
-
-    send_over_socket('99, 0, 1', '192.168.0.103', 65534)
-    send_over_socket('99, 0, 1', '192.168.0.102', 65535)
-    send_over_socket('99, 0, 1', '192.168.0.104', 65533)    
-
-
-    # send_over_socket('99, 0, 2, 3, 2, 3 ', '192.168.0.104', 65533)
-    send_over_socket('102, 0', '192.168.0.104', 65533)
+    pass
+    

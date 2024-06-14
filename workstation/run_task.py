@@ -16,10 +16,10 @@ from honeycomb_task.plot_paths import Plot
 import os
 import datetime
 import pandas as pd
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import copy
 import time
-plt.ion
+# plt.ion
 
 # CONSTANTS
 min_platform_dura_new = 0.2  # minimum duration animal must be on new platform to register choice
@@ -145,7 +145,7 @@ while True:
     # plot the paths
     # paths.plot_paths(robots, map)
     # robot_path_plot.plot_paths(robots, map, paths.optimal_paths)
-    robots.update_positions(paths)  # the positions need to be update before the move so we can update the crop parameters
+    robots.update_positions(paths)  # the positions need to be update before the move so we can update the crop 
     # get new crop parameters
     if choice_counter == 1 or chosen_platform != map.goal_position: # don't get new crop if at goal because it's unnecessary
         crop_nums = map.get_crop_nums(robots.get_positions()) # and platform positions may be outside map

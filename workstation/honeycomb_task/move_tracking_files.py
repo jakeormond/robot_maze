@@ -22,7 +22,7 @@ def list_tracking_files(starting_dir):
     # find video files begin with 'video_' and end with '.avi'
     video_files = [f for f in files if re.match(r'video_\d{4}-\d{2}-\d{2}_\d{2}\.\d{2}\.\d{2}\.avi', f)]
 
-    # csv files begin with: 'videoTS_', 'cropTimes_', 'cropValues_', 
+    # csv files begin with: 'videoTS_', 'cropTimes_', 'cropValues_',  
     # 'pulseTS_', 'dlcOut_', and end with '.csv'
     csv_files = [f for f in files if re.match(r'(videoTS_|cropTS_|cropValues_|pulseTS_|dlcOut_)\d{4}-\d{2}-\d{2}_\d{2}\.\d{2}\.\d{2}\.csv', f)]
 

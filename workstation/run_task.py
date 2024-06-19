@@ -161,7 +161,7 @@ while True:
         if chosen_platform == map.goal_position:
             print('Animal reached goal!')
             print('End of trial')
-            break   
+            break    
 
       
 

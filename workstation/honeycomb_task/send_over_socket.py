@@ -61,7 +61,7 @@ def handle_server(robot, string_input, data_queue):
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Set a timeout (e.g., 10 seconds) on the socket
-    s.settimeout(10)
+    s.settimeout(5)
 
     bytes_to_send = bytes(string_input, 'utf8')
 
@@ -83,7 +83,13 @@ def handle_server(robot, string_input, data_queue):
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
             # pause the program while the user reboots the robot
-            time.sleep(1)
+            # time.sleep(1)
+            s.close()
+            print("Socket is now disconnected")
+            print("should try to reconnect")
+            time.sleep(2)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(5)
 
             with data_queue_lock:
                 data_queue.put(f'Connection with robot{robot.id} failed')

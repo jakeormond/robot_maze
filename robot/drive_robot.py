@@ -109,6 +109,7 @@ def calculate_distance(enc1_a, enc2_a):
 def read_sensors():
     val1 = adc1.read_u16() # IR sensor 1
     val2 = adc2.read_u16() # IR sensor 2
+    # print(val1, val2)
     return val1, val2
 
 def check_online(): # 0 not on line, 1 left on line, 2 right on line, 3 both on line
@@ -258,7 +259,7 @@ def find_line_back_and_forth(conn=None):
                
         # drive and sleep
         drive_for_turn(INITIAL_TURN_SPEED, direction)            
-        utime.sleep_ms(10)        
+        utime.sleep_ms(20)        
         
         # check if online
         online_flag = check_online()
@@ -356,8 +357,8 @@ def linear_drive(n_lines, conn=None):
         if (lines_traversed >= (n_lines-1)) and not online:  
             if max(speed1, speed2) > MIN_SPEED:  # decelerate
                 # send_msg_over_socket('decelerating - lines_traversed =  ' + str(lines_traversed), conn) 
-                speed1 -= .3
-                speed2 -= .3
+                speed1 -= 1
+                speed2 -= 1
         
         elif max(speed1, speed2) < TOP_SPEED:  # accelerate
             speed1 += .3
@@ -399,10 +400,10 @@ def linear_drive(n_lines, conn=None):
 
 def turn_in_place(n_lines, conn=None):
     
-    send_msg_over_socket('TURN IN PLACE', conn)
+    # send_msg_over_socket('TURN IN PLACE', conn)
     
     if n_lines == 0:
-        send_msg_over_socket('n_lines = 0 so returning', conn)
+        # send_msg_over_socket('n_lines = 0 so returning', conn)
         return 0, 0
     
     # first, turn by distance
@@ -412,26 +413,28 @@ def turn_in_place(n_lines, conn=None):
         n_lines = 6 - n_lines
         direction = -1
     
+    print('n_lines = ', n_lines)
     distance = DIST_TURN * n_lines
     turn_by_distance(distance, direction, conn)
     
     # check if on line    
     online_flag = check_online() # 0 not on line, 1 left sensor on line, 2 right sensor on line, 3 both sensors on line
     if online_flag == 3: # on the line      
-        send_msg_over_socket('on the line', conn)
+        # send_msg_over_socket('on the line', conn)
+        pass
     
     elif online_flag > 0: # get centred 
-        send_msg_over_socket('half on', conn)
+        # send_msg_over_socket('half on', conn)
         find_line_half_on(conn)
 
     else: # if online_flag == 0
-        send_msg_over_socket('not on line!', conn)
+        # send_msg_over_socket('not on line!', conn)
         # move forward slightly
         drive_forward_by_distance(20, conn)
         # then search back and forth for the line        
         find_line_back_and_forth(conn)
     
-    send_msg_over_socket('finished turn_in_place', conn)
+    # send_msg_over_socket('finished turn_in_place', conn)
     return 0, 0
 
 
@@ -439,7 +442,7 @@ def turn_by_distance(distance, direction, conn=None): # direction == 1 for clock
     # updated on Oct 5, 2023: now, the robot starts looking for the line at
     # some distance before the target distance, and stops if it finds it. 
     
-    send_msg_over_socket('TURN_BY_DIST', conn)
+    # send_msg_over_socket('TURN_BY_DIST', conn)
          
     # reset encoders
     enc1, enc2 = reset_encoders()
@@ -479,7 +482,7 @@ def turn_by_distance(distance, direction, conn=None): # direction == 1 for clock
         online_flag = check_online()
         if online_flag == 0 and last_flag != 0:
             line_count += 1
-            send_msg_over_socket(f'line_count = {line_count}', conn)
+            # send_msg_over_socket(f'line_count = {line_count}', conn)
         last_flag = online_flag
         
         
@@ -506,13 +509,13 @@ def turn_by_distance(distance, direction, conn=None): # direction == 1 for clock
         
         round_speed = round(speed)
         drive_for_turn(round_speed, direction)                   
-        utime.sleep_ms(10)        
+        utime.sleep_ms(20)        
             
         # calculate elapsed time and stop if timed out
         elapsed_time = time.time() - start_time
         # conn.sendall(str(elapsed_time))
         if elapsed_time > 4:
-            send_msg_over_socket('timed out', conn)
+            # send_msg_over_socket('timed out', conn)
             
             drive_basic(0, 0)
             return -1, -1                  

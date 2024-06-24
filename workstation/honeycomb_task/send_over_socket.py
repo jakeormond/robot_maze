@@ -185,6 +185,7 @@ def send_over_sockets_threads(robots, paths, print_output=False):
                                 commands[key][c], data_queue))
             
             t.start()
+            time.sleep(0.1)
             threads.append(t)
         
         for thread in threads:
@@ -204,14 +205,17 @@ def send_over_sockets_threads(robots, paths, print_output=False):
 if __name__ == '__main__':
 
     # robot 2
-    send_over_socket('99, 0, 1', '192.168.0.103', 65534)
-    send_over_socket('99, 0, 1, 3, 1, 3, 1', '192.168.0.103', 65534)
+    # send_over_socket('99, 0, 1', '192.168.0.103', 65534)
+    # send_over_socket('99, 0, 1, 3, 1, 3, 1', '192.168.0.103', 65534)
     
     
-    send_over_socket('99, 0, 1, 3, 1, 3, 1', '192.168.0.102', 65535)
+    send_over_socket('99, 1', '192.168.0.102', 65535)
+    send_over_socket('99, 5', '192.168.0.102', 65535)
     
     
-    send_over_socket('99, 0, 1', '192.168.0.104', 65533)    
+    send_over_socket('99, 1', '192.168.0.104', 65533)    
+
+    send_over_socket('99, 1', '192.168.0.103', 65534)    
 
 
 

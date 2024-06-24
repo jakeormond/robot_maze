@@ -59,88 +59,100 @@ def handle_server(robot, string_input, data_queue):
     
     server_address = (robot.ip_address, robot.port)
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # Set a timeout (e.g., 10 seconds) on the socket
-    s.settimeout(5)
+    s = None
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Set a timeout (e.g., 10 seconds) on the socket
+        s.settimeout(5)
 
-    bytes_to_send = bytes(string_input, 'utf8')
+        bytes_to_send = bytes(string_input, 'utf8')
 
-    while True:
-        try:
-            s.connect(server_address)
-            s.sendall(bytes_to_send)
-            break
-        except (socket.error, ConnectionRefusedError) as e:
-            print(f"Error connecting to robot{robot.id}: {e}")
-            print("Try again in a second...")
+        while True:
+            try:
+                s.connect(server_address)
+                s.sendall(bytes_to_send)
+                break
+            except (socket.error, ConnectionRefusedError) as e:
+                print(f"Error connecting to robot{robot.id}: {e}")
+                print("Try again in a second...")
 
-            if e.errno == errno.WSAEISCONN: 
-                print("Socket is already connected.")
+                if e.errno == errno.WSAEISCONN: 
+                    print("Socket is already connected.")
+                    s.close()
+                    print("Socket is now disconnected")
+                    print("should try to reconnect")
+                    time.sleep(2)
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+                # pause the program while the user reboots the robot
+                # time.sleep(1)
                 s.close()
                 print("Socket is now disconnected")
                 print("should try to reconnect")
                 time.sleep(2)
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(5)
 
-            # pause the program while the user reboots the robot
-            # time.sleep(1)
-            s.close()
-            print("Socket is now disconnected")
-            print("should try to reconnect")
-            time.sleep(2)
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(5)
+                with data_queue_lock:
+                    data_queue.put(f'Connection with robot{robot.id} failed')
 
-            with data_queue_lock:
-                data_queue.put(f'Connection with robot{robot.id} failed')
+                # return 
+    
+        received_data = []
+        max_retries = 3
+        base_delay = 1  # Initial delay in seconds
+        retry_counter = 0
 
-            # return 
-   
-    received_data = []
-    max_retries = 3
-    base_delay = 1  # Initial delay in seconds
-    retry_counter = 0
+        # reset the timeout 
+        s.settimeout(20)
 
-    # reset the timeout 
-    s.settimeout(20)
+        while True:        
+            
+            try:
+                data = s.recv(BUFFER_SIZE)  # Receive data from server
 
-    while True:        
-        
-        try:
-            data = s.recv(BUFFER_SIZE)  # Receive data from server
-
-            # check if data is empty
-            if not data:
+                # check if data is empty
+                if not data:
+                    break
+                    
+                data = data.decode('utf8')
+                # split data on comma
+                data = data.split(',')
+                # check is any elements are empty and remove them
+                data = [x for x in data if x != '']
+                received_data.extend(data)
                 break
-                
-            data = data.decode('utf8')
-            # split data on comma
-            data = data.split(',')
-            # check is any elements are empty and remove them
-            data = [x for x in data if x != '']
-            received_data.extend(data)
-            break
 
-        except ConnectionResetError as e:
-            print(f"Error: {e}")
-            if retry_counter > max_retries:
+            except ConnectionResetError as e:
+                print(f"Error: {e}")
+                if retry_counter > max_retries:
+                    break
+            
+                # handle the exception (e.g. log an error message)
+                time.sleep(base_delay * (2**retry_counter))  # wait a bit            
+                retry_counter += 1
+
+            except socket.timeout:
+                print("Socket timeout occurred during data reception.")
+                # Handle the timeout situation
                 break
-           
-            # handle the exception (e.g. log an error message)
-            time.sleep(base_delay * (2**retry_counter))  # wait a bit            
-            retry_counter += 1
 
-        except socket.timeout:
-            print("Socket timeout occurred during data reception.")
-            # Handle the timeout situation
-            break
+            time.sleep(0.1) 
 
-        time.sleep(0.1) 
+        data_with_identifier = {'robot_id': robot.id, 
+                                'data': received_data}
+        with data_queue_lock:
+            data_queue.put(data_with_identifier)
 
-    data_with_identifier = {'robot_id': robot.id, 
-                            'data': received_data}
-    with data_queue_lock:
-        data_queue.put(data_with_identifier)
+    except Exception as e:
+        # Handle any exceptions that might occur
+        print(f"An error occurred: {e}")
+        # Optionally, re-raise the exception if you want to propagate the error
+        # raise
+
+    finally:
+        if s is not None:
+            s.close()  # Ensure the socket is closed in the finally block
 
     return 
 

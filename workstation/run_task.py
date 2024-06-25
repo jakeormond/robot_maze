@@ -22,9 +22,7 @@ import time
 # plt.ion
 
 # CONSTANTS
-min_platform_dura_new = 0.2  # minimum duration animal must be on new platform to register choice
-# min_platform_dura_verify = 0.5  # minimum duration animal must be on  platform to verify choice
-                            # after robots have made their initial turns 
+min_platform_dura = 0.2  # minimum duration animal must be on platform to register choice
 
 # top level folder
 top_dir = 'D:/testFolder'
@@ -113,34 +111,56 @@ while True:
     if choice_counter != 1:
         while True:
             # split off the first paths
-            # initial_turns = paths.split_off_initial_turn()
-            # if initial_turns is None: # if there are no initial turns
-            #     # set the start platform to the chosen platform
-            #     print('no initial turns')
-            #     start_platform = chosen_platform
-            #     verified_platform = chosen_platform
-            #     break
+            initial_turns = paths.split_off_initial_turn()
+            if initial_turns is None: # if there are no initial turns
+                # set the start platform to the chosen platform
+                print('no initial turns')
+                start_platform = chosen_platform
+                verified_platform = chosen_platform
+                break
 
-            # # send commands to robots. This can return 
-            # # data from the robots, but probably not necessary
-            # # THIS SHOULD INCLUDE ONLY THE FIRST TURNS
-            # # robot positions are updated in this function
-            # send_over_sockets_threads(robots, initial_turns)
-            # robots.update_orientations(initial_turns)  
-            # print(robots)
+            # send commands to robots. This can return 
+            # data from the robots, but probably not necessary
+            # THIS SHOULD INCLUDE ONLY THE FIRST TURNS
+            # robot positions are updated in this function
+            send_over_sockets_threads(robots, initial_turns)
+            robots.update_orientations(initial_turns)  
+            print(robots)
 
             # SO WE CAN MAKE SURE THE ANIMAL DIDN'T MOVE
             # monitor the tracking data coming from Bonsai to determine
             # when the animal's made its decision. 
-            # verified_platform, _ = animal.find_new_platform(possible_platforms, start_platform, 
-            #                    map.platform_coordinates, crop_nums, min_platform_dura_verify)
-
-
-                       
+            verified_platform, _ = animal.find_new_platform(possible_platforms, start_platform, 
+                               map.platform_coordinates, crop_nums, min_platform_dura)
             
-            print(f'Animal chose platform {int(chosen_platform)}')
-            start_platform = chosen_platform
-            break
+            if chosen_platform != verified_platform:
+                print('Animal changed its mind!')
+                print(f'new choice is platform {verified_platform}')
+                
+                # update the choice history
+                trial_data.register_choice(verified_platform, chosen_platform)
+                
+                # update robots, the stationary robot becomes moving, and the 
+                # the verified_platform robot becomes stationary
+                stat_robot_key = robots.get_robot_key_at_position(verified_platform)
+                robots.members[stat_robot_key].set_new_state('stationary')
+
+                non_stat_robot_key = robots.get_robot_key_at_position(chosen_platform)
+                robots.members[non_stat_robot_key].set_new_state('moving')
+
+                # reset current_platform
+                chosen_platform = verified_platform
+               
+                if choice_counter != 1 and chosen_platform == map.goal_position:
+                    paths = Paths(robots, map, task='move_away')
+                else:
+                    paths = Paths(robots, map, choices=previous_choices)
+
+            else:
+                print(f'Animal chose platform {int(chosen_platform)}')
+                start_platform = chosen_platform
+                break
+
 
     # plot the paths
     # paths.plot_paths(robots, map)
@@ -163,8 +183,6 @@ while True:
             print('End of trial')
             break    
 
-      
-
     # start the choice and save crop params
     trial_data.start_choice(start_platform)
     trial_data.save_crop_params(crop_nums)
@@ -179,7 +197,7 @@ while True:
 
     # get the animal's choice    
     chosen_platform, unchosen_platform = animal.find_new_platform(possible_platforms, start_platform, 
-                               map.platform_coordinates, crop_nums, min_platform_dura_new)
+                               map.platform_coordinates, crop_nums, min_platform_dura)
     print(f'Animal chose platform {int(chosen_platform)}')
     trial_data.register_choice(chosen_platform, unchosen_platform)
     choice_counter += 1    

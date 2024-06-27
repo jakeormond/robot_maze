@@ -861,10 +861,11 @@ if __name__ == '__main__':
 
     # directory = "/media/jake/LaCie/robot_maze_workspace"
     # map_dir = '/home/jake/Documents/robot_maze/workstation/map_files'
-    map_dir = 'D:/testFolder/pico_robots/map'
+    # map_dir = 'D:/testFolder/pico_robots/map'
+    map_dir = 'D:/testFolder/platform_maps_and_yaml/map'
     # map = Map(directory=map_dir)
     map = Map(28, [9, 10]) 
-    map.restrict_map(41, 217, extra_row=0)
+    map.restrict_map(41, 198, extra_row=1)
     map.save_map(directory=map_dir)
     ring = get_ring_v2(19, map, 2)       
     # map.save_map()

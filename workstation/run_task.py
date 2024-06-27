@@ -23,6 +23,7 @@ import time
 
 # CONSTANTS
 min_platform_dura = 0.2  # minimum duration animal must be on platform to register choice
+min_platform_dura2 = 1.
 
 # top level folder
 top_dir = 'D:/testFolder'
@@ -131,7 +132,7 @@ while True:
             # monitor the tracking data coming from Bonsai to determine
             # when the animal's made its decision. 
             verified_platform, _ = animal.find_new_platform(possible_platforms, start_platform, 
-                               map.platform_coordinates, crop_nums, min_platform_dura)
+                               map.platform_coordinates, crop_nums, min_platform_dura2)
             
             if chosen_platform != verified_platform:
                 print('Animal changed its mind!')

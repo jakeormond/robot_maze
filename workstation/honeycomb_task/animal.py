@@ -239,9 +239,13 @@ def get_current_platform(parsed_data, possible_platforms,
     for i, platform in enumerate(possible_platforms):
         distances[i] = np.sqrt((x_val - platform_coordinates[platform][0])**2 + 
                                (y_val - platform_coordinates[platform][1])**2)
-
     
-    if np.min(distances) > 70: # was 100
+    # sort the distances
+    sorted_distances = np.sort(distances)
+    # distance_diff is the difference between the closest and second closest platform
+    distance_diff = sorted_distances[1] - sorted_distances[0]
+    
+    if np.min(distances) > 80 and distance_diff < 50: # was 100
         current_platform = None
     
     else:

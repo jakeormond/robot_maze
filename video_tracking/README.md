@@ -10,5 +10,7 @@ To synchronize the video with electrophysiological recordings, robotMaze_DLC sen
 
 ![arduino with digital out](../images/arduino_digital_out.jpg)
 
+The extensions folder with ffmpeg writer needs to be in the folder containing the bonsai code.
+
 
 

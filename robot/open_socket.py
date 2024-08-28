@@ -49,7 +49,7 @@ def open_socket_connection(PORT, wlan, ipconfig, ssid, password):
             time2 = time.time()
             total_time = time2-time1
             print('total_time = ', total_time)
-            if total_time > 30:
+            if total_time > 20:
                 machine.reset()
             
             
@@ -89,8 +89,8 @@ def open_socket_connection(PORT, wlan, ipconfig, ssid, password):
                 print('wifi was disconnected; reconnecting')
                 wlan = connect(ipconfig, ssid, password)
             else:
-                print('wifi still connected, reconnecting anyways')
-                wlan = connect(ipconfig, ssid, password)
+                print('wifi still connected')
+                
             
         finally:
             
@@ -181,7 +181,10 @@ def parse_data(data, conn):
     else:    # bad command
         conn.sendall('bad command')
     
-    time.sleep(1)
+    # time.sleep(1)
     # machine.reset()
     return
+
+
+
 

@@ -30,7 +30,7 @@ RESETENCODERS = 0x20
 MODE_REG = 0x0F
 
 # set constants
-IR_THRESHOLD = 7000 # probably needs adjusting
+IR_THRESHOLD = 15000 # probably needs adjusting
 TOP_SPEED = 40  # 127
 INITIAL_TURN_SPEED = 10
 INITIAL_STRAIGHT_SPEED = 15
@@ -367,7 +367,11 @@ def linear_drive(n_lines, conn=None):
         # check if online and update if necessary
         last_online_flag = online_flag
         online_flag = check_online()        
-        if online_flag != 0 and not online and max(distance1, distance2) > 80:
+        
+        
+        # IF ON LINE BUT PREVIOUSLY OFF LINE
+        # if online_flag != 0 and not online and max(distance1, distance2) > 80:
+        if online_flag != 0 and not online:
             lines_traversed += 1
             online = True
             gap_distances1.append(distance1)
@@ -381,7 +385,8 @@ def linear_drive(n_lines, conn=None):
                 # send_msg_over_socket('breaking', conn)
                 drive_basic(0, 0)
                 break
-            
+        
+        # ELSE IF OFF LINE BUT PREVIOUSLY ON LINE, CHANGE ONLINE TO FALSE
         elif online_flag == 0 and online and max(distance1, distance2) >= 150:
             online = False
             line_distances1.append(distance1)
@@ -391,6 +396,7 @@ def linear_drive(n_lines, conn=None):
             
             # send_msg_over_socket('off the line', conn)
             
+        # ELSE IF OFF LINE BUT PREVIOUSLY ON LINE AND NOT TRAVELLED FAR ENOUGH TO BE OFF LINE
         elif online_flag == 0 and online and max(distance1, distance2) < 150:
             online_flag = last_online_flag          
             # send_msg_over_socket('off the line before gap - trying to find', conn)
@@ -413,7 +419,6 @@ def turn_in_place(n_lines, conn=None):
         n_lines = 6 - n_lines
         direction = -1
     
-    print('n_lines = ', n_lines)
     distance = DIST_TURN * n_lines
     turn_by_distance(distance, direction, conn)
     
@@ -428,7 +433,7 @@ def turn_in_place(n_lines, conn=None):
         find_line_half_on(conn)
 
     else: # if online_flag == 0
-        # send_msg_over_socket('not on line!', conn)
+        send_msg_over_socket('not on line!', conn)
         # move forward slightly
         drive_forward_by_distance(20, conn)
         # then search back and forth for the line        

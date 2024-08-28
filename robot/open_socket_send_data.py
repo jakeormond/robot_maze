@@ -17,9 +17,9 @@ def connect(ipconfig, ssid, password):
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     wlan.ifconfig(ipconfig)
-    wlan.config(pm = 0x111022)
     wlan.connect(ssid, password)
-    # wlan.PM_NONE
+    wlan.PM_NONE
+
     while wlan.isconnected() == False:
         print('Waiting for connection...')
         sleep(1)

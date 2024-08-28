@@ -29,3 +29,6 @@ Note that a number of directory locations are hard-coded, and will need to be ch
 - yaml_dir, the location of the previously generated configuration file
 - map_dir, the location of the map files
 - server_dir, the location for long-term storage
+
+
+In terms of branches, quick_path_w_check was the branch used during the final single goal experiments. I believe figure_update was used by Bochen when running the 2 goal experiments, but this needs to be verified.

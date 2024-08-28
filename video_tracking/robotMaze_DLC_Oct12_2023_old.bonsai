@@ -242,8 +242,8 @@
       <Expression xsi:type="Combinator">
         <Combinator xsi:type="cv:Crop">
           <cv:RegionOfInterest>
-            <cv:X>953</cv:X>
-            <cv:Y>314</cv:Y>
+            <cv:X>813</cv:X>
+            <cv:Y>680</cv:Y>
             <cv:Width>600</cv:Width>
             <cv:Height>600</cv:Height>
           </cv:RegionOfInterest>
@@ -413,7 +413,7 @@ def process(value):
       </Expression>
       <Expression xsi:type="Combinator">
         <Combinator xsi:type="p1:FFmpegWriter">
-          <p1:FileName>video_2023-11-10_12.15.46.avi</p1:FileName>
+          <p1:FileName>video_2023-10-12_17.41.04.avi</p1:FileName>
           <p1:Suffix>None</p1:Suffix>
           <p1:Overwrite>true</p1:Overwrite>
           <p1:FrameRate>35</p1:FrameRate>
@@ -444,7 +444,7 @@ def process(value):
         </PropertyMappings>
       </Expression>
       <Expression xsi:type="io:CsvWriter">
-        <io:FileName>videoTS_2023-11-10_12.15.46.csv</io:FileName>
+        <io:FileName>videoTS_2023-10-12_17.41.04.csv</io:FileName>
         <io:Append>false</io:Append>
         <io:Overwrite>true</io:Overwrite>
         <io:Suffix>None</io:Suffix>
@@ -550,7 +550,7 @@ def process(value):
         </PropertyMappings>
       </Expression>
       <Expression xsi:type="io:CsvWriter">
-        <io:FileName>cropTS_2023-11-10_12.15.46.csv</io:FileName>
+        <io:FileName>cropTS_2023-10-12_17.41.04.csv</io:FileName>
         <io:Append>false</io:Append>
         <io:Overwrite>true</io:Overwrite>
         <io:Suffix>None</io:Suffix>
@@ -582,7 +582,7 @@ def process(value):
         </PropertyMappings>
       </Expression>
       <Expression xsi:type="io:CsvWriter">
-        <io:FileName>cropValues_2023-11-10_12.15.46.csv</io:FileName>
+        <io:FileName>cropValues_2023-10-12_17.41.04.csv</io:FileName>
         <io:Append>false</io:Append>
         <io:Overwrite>true</io:Overwrite>
         <io:Suffix>None</io:Suffix>
@@ -606,7 +606,7 @@ def process(value):
         </PropertyMappings>
       </Expression>
       <Expression xsi:type="io:CsvWriter">
-        <io:FileName>pulseTS_2023-11-10_12.15.46.csv</io:FileName>
+        <io:FileName>pulseTS_2023-10-12_17.41.04.csv</io:FileName>
         <io:Append>false</io:Append>
         <io:Overwrite>true</io:Overwrite>
         <io:Suffix>None</io:Suffix>
@@ -630,7 +630,7 @@ def process(value):
         </PropertyMappings>
       </Expression>
       <Expression xsi:type="io:CsvWriter">
-        <io:FileName>dlcOut_2023-11-10_12.15.46.csv</io:FileName>
+        <io:FileName>dlcOut_2023-10-12_17.41.04.csv</io:FileName>
         <io:Append>false</io:Append>
         <io:Overwrite>true</io:Overwrite>
         <io:Suffix>None</io:Suffix>
